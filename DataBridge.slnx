@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/DataBridge.App/DataBridge.App.csproj" />
+    <Project Path="src/DataBridge.Core/DataBridge.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/DataBridge.Tests/DataBridge.Tests.csproj" />
+  </Folder>
+</Solution>

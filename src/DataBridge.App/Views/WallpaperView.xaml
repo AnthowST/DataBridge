@@ -1,0 +1,37 @@
+<UserControl x:Class="DataBridge.App.Views.WallpaperView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="28,24,28,24">
+            <TextBlock Text="7. Fond d'écran" Style="{StaticResource PageTitle}" />
+            <TextBlock Style="{StaticResource PageSubtitle}"
+                       Text="Copie du fond d'écran actuel tel que Windows le met en cache (fichier sans extension) dans Windows\Wallpaper\TranscodedWallpaper." />
+
+            <Border Style="{StaticResource Card}" Margin="0,18,0,0">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Top">
+                        <CheckBox IsChecked="{Binding Include, Mode=TwoWay}" IsEnabled="{Binding Exists}" AutomationProperties.AutomationId="IncludeWallpaper"
+                                  AutomationProperties.Name="Fond d'écran actuel">
+                            <TextBlock Text="Fond d'écran actuel" FontWeight="SemiBold" FontSize="14" />
+                        </CheckBox>
+                        <TextBlock Text="{Binding DetailText}" Foreground="{StaticResource TextMuted}" Margin="26,4,0,0" TextWrapping="Wrap"
+                                   AutomationProperties.AutomationId="WallpaperDetail" />
+                        <TextBlock Text="SOURCE" Style="{StaticResource Label}" Margin="26,16,0,0" />
+                        <TextBlock Text="{Binding Path}" FontFamily="{StaticResource MonoFont}" FontSize="12" Margin="26,4,0,0" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <Border Grid.Column="1" Width="288" Height="162" CornerRadius="6" BorderBrush="{StaticResource Border}" BorderThickness="1"
+                            Background="{StaticResource SurfaceAlt}" Margin="16,0,0,0" ClipToBounds="True">
+                        <Grid>
+                            <TextBlock Text="Aperçu indisponible" Style="{StaticResource Small}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            <Image Source="{Binding Thumbnail}" Stretch="UniformToFill" />
+                        </Grid>
+                    </Border>
+                </Grid>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

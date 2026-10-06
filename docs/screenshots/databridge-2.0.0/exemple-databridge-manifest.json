@@ -1,0 +1,126 @@
+{
+  "schemaVersion": 1,
+  "format": "DataBridge backup manifest",
+  "dataBridgeVersion": "2.0.0",
+  "backupId": "e51b4220-7a8d-43cc-a096-dd37c2410b63",
+  "createdAt": "2026-10-06T22:21:43.4236307+02:00",
+  "completedAt": "2026-10-06T22:21:45.0287786+02:00",
+  "status": "completed",
+  "source": {
+    "computer": "PC-ANTHOW",
+    "user": "Anthow",
+    "domain": "PC-ANTHOW",
+    "profilePath": "C:\\Users\\Anthow",
+    "windowsVersion": "Windows 11 Pro 26H2 (build 26300)"
+  },
+  "totals": {
+    "files": 17,
+    "bytes": 11910434
+  },
+  "options": {
+    "skipCloudOnly": true
+  },
+  "categories": [
+    "personalFolders",
+    "additionalItems",
+    "outlookSignatures",
+    "wifi",
+    "wallpaper"
+  ],
+  "personalFolders": [
+    {
+      "kind": "Desktop",
+      "label": "Bureau",
+      "originalPath": "D:\\ProfileCopy-Tests\\E2E-20\\A\\Profil\\Bureau",
+      "relativePath": "Personal\\Desktop",
+      "location": "local",
+      "partial": false,
+      "files": 1,
+      "bytes": 33
+    },
+    {
+      "kind": "Documents",
+      "label": "Documents",
+      "originalPath": "D:\\ProfileCopy-Tests\\E2E-20\\A\\Profil\\Documents",
+      "relativePath": "Personal\\Documents",
+      "location": "local",
+      "partial": false,
+      "files": 7,
+      "bytes": 8388724
+    },
+    {
+      "kind": "Downloads",
+      "label": "T\u00E9l\u00E9chargements",
+      "originalPath": "D:\\ProfileCopy-Tests\\E2E-20\\A\\Profil\\Telechargements",
+      "relativePath": "Personal\\Downloads",
+      "location": "local",
+      "partial": false,
+      "files": 0,
+      "bytes": 0
+    },
+    {
+      "kind": "Pictures",
+      "label": "Images",
+      "originalPath": "D:\\ProfileCopy-Tests\\E2E-20\\A\\Profil\\Images",
+      "relativePath": "Personal\\Pictures",
+      "location": "local",
+      "partial": false,
+      "files": 2,
+      "bytes": 563200
+    },
+    {
+      "kind": "Videos",
+      "label": "Vid\u00E9os",
+      "originalPath": "D:\\ProfileCopy-Tests\\E2E-20\\A\\Profil\\Videos",
+      "relativePath": "Personal\\Videos",
+      "location": "local",
+      "partial": false,
+      "files": 0,
+      "bytes": 0
+    },
+    {
+      "kind": "Music",
+      "label": "Musique",
+      "originalPath": "D:\\ProfileCopy-Tests\\E2E-20\\A\\Profil\\Musique",
+      "relativePath": "Personal\\Music",
+      "location": "local",
+      "partial": false,
+      "files": 1,
+      "bytes": 122880
+    }
+  ],
+  "additionalItems": [
+    {
+      "name": "Compta 2025",
+      "originalPath": "D:\\ProfileCopy-Tests\\E2E-20\\A\\Extra\\Compta 2025",
+      "relativePath": "Additional\\Compta 2025",
+      "isFile": false,
+      "files": 2,
+      "bytes": 40977
+    }
+  ],
+  "outlookSignatures": {
+    "originalPath": "C:\\Users\\Anthow\\AppData\\Roaming\\Microsoft\\Signatures",
+    "relativePath": "Outlook\\Signatures",
+    "names": [
+      "Externe (anthony.stucki@itelium.ch)"
+    ],
+    "files": 3,
+    "bytes": 92796
+  },
+  "browsers": [],
+  "wifi": [
+    {
+      "name": "has-77504",
+      "file": "Network\\WiFi\\Wi-Fi-has-77504.xml",
+      "authentication": "WPA3-Personnel",
+      "keyIncluded": true,
+      "scope": "allUsers"
+    }
+  ],
+  "wallpaper": {
+    "originalPath": "C:\\Users\\Anthow\\AppData\\Roaming\\Microsoft\\Windows\\Themes\\TranscodedWallpaper",
+    "relativePath": "Windows\\Wallpaper\\TranscodedWallpaper",
+    "bytes": 2701824
+  }
+}

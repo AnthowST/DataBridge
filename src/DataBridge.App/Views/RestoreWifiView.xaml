@@ -1,0 +1,100 @@
+<UserControl x:Class="DataBridge.App.Views.RestoreWifiView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:DataBridge.App.ViewModels">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="28,24,28,24">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Top" Visibility="{Binding IsPresent, Converter={StaticResource Visible}}">
+                    <Button Style="{StaticResource GhostButton}" Content="Tout cocher" Command="{Binding SelectAllCommand}" />
+                    <Button Style="{StaticResource GhostButton}" Content="Tout décocher" Command="{Binding SelectNoneCommand}" />
+                </StackPanel>
+                <StackPanel>
+                    <TextBlock Text="{Binding PageTitle}" Style="{StaticResource PageTitle}" />
+                    <TextBlock Style="{StaticResource PageSubtitle}"
+                               Text="Import des profils WLAN sauvegardés avec l'API Windows, uniquement avec les droits de la session : aucune élévation n'est demandée. La clé n'est jamais affichée." />
+                </StackPanel>
+            </DockPanel>
+
+            <Border Style="{StaticResource Banner}" Margin="0,16,0,0" Visibility="{Binding ServiceMessage, Converter={StaticResource NotEmpty}}">
+                <DockPanel>
+                    <TextBlock Style="{StaticResource Icon}" Text="&#xE946;" Foreground="{StaticResource Warning}" Margin="0,0,10,0" />
+                    <TextBlock Text="{Binding ServiceMessage}" TextWrapping="Wrap" AutomationProperties.AutomationId="RestoreWifiMessage" />
+                </DockPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}" Margin="0,16,0,0" Visibility="{Binding IsPresent, Converter={StaticResource Hidden}}"
+                    AutomationProperties.AutomationId="WifiAbsent">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Style="{StaticResource Icon}" Text="&#xE946;" FontSize="14" Foreground="{StaticResource TextTertiary}" Margin="0,1,10,0" />
+                    <TextBlock Text="Non présent dans cette sauvegarde." Foreground="{StaticResource TextMuted}" />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}" Margin="0,16,0,0" Padding="0" Visibility="{Binding IsPresent, Converter={StaticResource Visible}}">
+                <ItemsControl ItemsSource="{Binding Items}" AutomationProperties.AutomationId="RestoreWifiList">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:RestoreWifiItemViewModel}">
+                            <Border BorderBrush="{StaticResource Border}" BorderThickness="0,0,0,1" Padding="16,11">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}" VerticalAlignment="Center" AutomationProperties.Name="{Binding Name}"
+                                              AutomationProperties.AutomationId="RestoreWifiCheck" />
+                                    <StackPanel Grid.Column="1" Margin="4,0,0,0" VerticalAlignment="Center" Orientation="Horizontal">
+                                        <TextBlock Style="{StaticResource Icon}" Text="&#xE701;" FontSize="14" Foreground="{StaticResource Accent}" Margin="0,0,8,0" />
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                        <Border Style="{StaticResource Badge}"><TextBlock Text="{Binding Authentication}" /></Border>
+                                        <Border Style="{StaticResource WarningBadge}" Visibility="{Binding ExistsOnThisPc, Converter={StaticResource Visible}}">
+                                            <TextBlock Text="Déjà présent sur ce PC" />
+                                        </Border>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock x:Name="KeyIcon" Style="{StaticResource Icon}" FontSize="12" Text="&#xE73E;" Foreground="{StaticResource Success}" Margin="0,0,6,0" />
+                                        <TextBlock x:Name="KeyText" Text="{Binding KeyLabel}" FontSize="12" Foreground="{StaticResource Success}" AutomationProperties.AutomationId="RestoreWifiKey" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding KeyIncluded}" Value="False">
+                                    <Setter TargetName="KeyIcon" Property="Text" Value="&#xE946;" />
+                                    <Setter TargetName="KeyIcon" Property="Foreground" Value="{StaticResource TextMuted}" />
+                                    <Setter TargetName="KeyText" Property="Foreground" Value="{StaticResource TextMuted}" />
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Border>
+
+            <Border Style="{StaticResource Card}" Margin="0,14,0,0" Visibility="{Binding IsPresent, Converter={StaticResource Visible}}">
+                <StackPanel>
+                    <TextBlock Text="SI UN PROFIL DU MÊME NOM EXISTE DÉJÀ SUR CE PC" Style="{StaticResource Label}" />
+                    <RadioButton IsChecked="{Binding KeepExisting, Mode=TwoWay}" Margin="0,10,0,0" GroupName="WifiExisting" AutomationProperties.AutomationId="WifiKeepExisting">
+                        <StackPanel>
+                            <TextBlock Text="Conserver le profil existant" FontWeight="SemiBold" />
+                            <TextBlock Text="Recommandé : aucun doublon, la configuration actuelle n'est pas modifiée." Style="{StaticResource Small}" />
+                        </StackPanel>
+                    </RadioButton>
+                    <RadioButton IsChecked="{Binding ReplaceExisting, Mode=TwoWay}" Margin="0,8,0,0" GroupName="WifiExisting" AutomationProperties.AutomationId="WifiReplaceExisting">
+                        <StackPanel>
+                            <TextBlock Text="Remplacer par le profil de la sauvegarde" FontWeight="SemiBold" />
+                            <TextBlock Text="Le profil existant est remplacé (même nom), sans créer de doublon." Style="{StaticResource Small}" />
+                        </StackPanel>
+                    </RadioButton>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource InfoBanner}" Margin="0,14,0,0">
+                <DockPanel>
+                    <TextBlock Style="{StaticResource Icon}" Text="&#xE72E;" Foreground="{StaticResource Accent}" VerticalAlignment="Top" Margin="0,1,10,0" />
+                    <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TextMuted}"
+                               Text="Si Windows refuse l'import d'un profil avec les droits de la session, il est indiqué « Profil Wi-Fi non restauré avec les droits de la session » : aucune élévation n'est demandée. La clé contenue dans un fichier XML n'est jamais affichée ni écrite dans le journal." />
+                </DockPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

@@ -1,0 +1,22 @@
+﻿apres-1.3.2 | exe C:\Users\Anthow\Software\profilecopy\tools\ui-test\..\..\publish\DataBridge.exe | version DataBridge 1.3.2 | DPI 96 (100 %) | per-monitor=True | jeton elevated=0;integrity=0x2000
+Fenêtre DWM -1873,20--187,1003 | UIA -1880,20
+[OK ] chrome-coche -> On | éléments déplacés : 0 | pixels case/compteur=1214 | pixels ailleurs=0
+[OK ] chrome-decoche-de-nouveau -> Off | éléments déplacés : 0 | pixels case/compteur=1214 | pixels ailleurs=0
+[OK ] edge-coche -> On | éléments déplacés : 0 | pixels case/compteur=1173 | pixels ailleurs=0
+[OK ] edge-decoche-de-nouveau -> Off | éléments déplacés : 0 | pixels case/compteur=1173 | pixels ailleurs=0
+[OK ] firefox-B-premier-seul -> On | éléments déplacés : 0 | pixels case/compteur=1167 | pixels ailleurs=0
+[OK ] firefox-D-les-deux -> On | éléments déplacés : 0 | pixels case/compteur=420 | pixels ailleurs=0
+[OK ] firefox-B-deuxieme-decoche -> Off | éléments déplacés : 0 | pixels case/compteur=420 | pixels ailleurs=0
+[OK ] firefox-A-aucun -> Off | éléments déplacés : 0 | pixels case/compteur=1167 | pixels ailleurs=0
+[OK ] firefox-C-deuxieme-seul -> On | éléments déplacés : 0 | pixels case/compteur=1139 | pixels ailleurs=0
+Firefox état C comparé à l'état A : éléments déplacés : 0
+Ligne « m53emrtd.default-release » : hauteur 32 px, centre case 730, centre texte « default-release » 730,5 (écart 0,5 px)
+Ligne « hpafvwfy.default » : hauteur 32 px, centre case 762, centre texte « default » 762,5 (écart 0,5 px)
+[OK ] signatures-bascule-1 -> Off | éléments déplacés : 0 | pixels case/compteur=379 | pixels ailleurs=0
+[OK ] signatures-bascule-2 -> On | éléments déplacés : 0 | pixels case/compteur=379 | pixels ailleurs=0
+[OK ] wifi-premier-bascule -> Off | éléments déplacés : 0 | pixels case/compteur=379 | pixels ailleurs=0
+[OK ] wifi-premier-retour -> On | éléments déplacés : 0 | pixels case/compteur=379 | pixels ailleurs=0
+[OK ] fond-ecran-bascule-1 -> Off | éléments déplacés : 0 | pixels case/compteur=379 | pixels ailleurs=0
+[OK ] fond-ecran-bascule-2 -> On | éléments déplacés : 0 | pixels case/compteur=379 | pixels ailleurs=0
+Fenêtre restée au même endroit pendant tout le test : -1873,20--187,1003, DPI 96
+RÉSULTAT apres-1.3.2 : 0 bascule(s) avec déplacement

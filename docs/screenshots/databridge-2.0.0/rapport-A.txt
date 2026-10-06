@@ -1,0 +1,32 @@
+﻿[22:21:13] ===== PARTIE A : sauvegarde 2.0 (manifest) puis restauration contrôlée =====
+[22:21:15] Source de test : 13 fichiers
+[22:21:18] Exe : C:\Users\Anthow\Software\profilecopy\src\DataBridge.App\bin\Debug\net10.0-windows\DataBridge.exe | jeton : elevated=0;integrity=0x2000 | UAC : False
+[22:21:18] Titre : DataBridge — Copiez, sauvegardez et restaurez vos données
+[22:21:22] Sauvegarde : DataBridge — Sauvegarde du profil Anthow sur PC-ANTHOW | étapes : ÉTAPES DE LA SAUVEGARDE
+[22:21:46] Sauvegarde : Sauvegarde terminée | fichiers 17 | erreurs 0
+[22:21:46] Sauvegarde créée : D:\ProfileCopy-Tests\E2E-20\A\Sauvegardes\DataBridge_PC-ANTHOW_Anthow_2026-10-06_22-21 | manifest : True
+[22:21:46] Manifest : schemaVersion 1, version 2.0.0, PC PC-ANTHOW, catégories personalFolders, additionalItems, outlookSignatures, wifi, wallpaper, fichiers 17
+[22:21:46] Manifest sans secret : True
+[22:21:48] « Terminer » ramène à l'accueil : True
+[22:21:49] Sources modifiées : 5 fichiers supprimés (dont l'ISO et le dossier supplémentaire), plan.txt modifié (plus récent), notes.txt plus ancien que la sauvegarde.
+[22:22:01] Sauvegarde lue : PC PC-ANTHOW | session Anthow | 06.10.2026 22:21 | DataBridge 2.0.0 | (absent) | 11 Mo | 17
+[22:22:05] Documents : Ouvrir Documents | Documents | Documents | Local | Personal\Documents  →  D:\ProfileCopy-Tests\E2E-20\A\Profil\Documents | 8.0 Mo | 7 éléments · Dossier complet
+[22:22:07] Documents après décochage de « Ancienne ISO » : Indeterminate
+[22:22:09] Supplémentaires : DataBridge.App.ViewModels.RestoreAdditionalItemViewModel | Compta 2025 | Compta 2025 | 40 Ko · 2 fichiers | Sauvegarde | Additional\Compta 2025 | Ancien chemin | D:\ProfileCopy-Tests\E2E-20\A\Extra\Compta 2025 | Destination | Destination originale | D:\ProfileCopy-Tests\E2E-20\A\Extra\Compta 2025 | Destination originale. | Choisir une autre destination | Choisir une autre destination
+[22:22:20] Résumé : à restaurer 681 Ko | fichiers 10 | remplacés 1 | existants 6
+[22:22:20] Correspondances : MappingLine { Label = Bureau, Source = DataBridge_PC-ANTHOW_Anthow_2026-10-06_22-21\Personal\Desktop, Destination = D:\ProfileCopy-Tests\E2E-20\A\Profil\Bureau, Note = Local, IsOneDrive = False } | Bureau | DataBridge_PC-ANTHOW_Anthow_2026-10-06_22-21\Personal\Desktop | D:\ProfileCopy-Tests\E2E-20\A\Profil\Bureau | Local | MappingLine { Label = Documents, Source = DataBridge_PC-ANTHOW_Anthow_2026-10-06_22-21\Personal\Documents, Destination = D:\ProfileCopy-Tests\E2E-20\A\Profil\Documents, Note = Local, IsOneDrive = False } | Documents | DataBridge_PC-ANTHOW_Anthow_2026-10-06_22-21\Personal\Documents | D:\ProfileCopy-Tests\E2E-20\A\Profil\Documents | Local | MappingLine { Label = Téléchargements, Source = DataBridge_PC-ANTHOW_Anthow_2026-10-06_22-21\Personal\Downloads, Destination = D:\ProfileCopy-Tests\E2E-20\A\Profil\Telechargements, Note = Local, IsOneDrive = False } | Téléchargements | DataBridge_PC-ANTHOW_Anthow_2026-10-06_22-21\Personal\Downloads | D:\ProfileCopy-Tests\E2E-20\A\Profil\Telechargements | Local | MappingLine { Label = Images, Source = DataBridge_PC-ANTHOW_Anthow_2026-10-06_22-21\Personal\Pictures, Destination = D:\ProfileCopy-Tests\E2E-20\A\Profil\Images, Note = Local, IsOneDrive = False } | Images | DataBridge_PC-ANTHOW_Anthow_2026-10-06_22-21\Personal\Pictures | D:\ProfileCopy-Tests\E2E-20\A\Profil\Images | Local | MappingLine { Label = Vidéos, Source = DataBridge_PC-ANTHOW_Anthow_2026-10-06_22-21\Personal\Videos, Destination = D:\ProfileCopy-Tests\E2E-20\A\Profil\Videos, Note = Local, IsOneDrive = False } | Vidéos | DataBridge_PC-ANTHOW_Anthow_2026-10-06_22-21\Personal\Videos | D:\ProfileCopy-Tests\E2E-20\A\Profil\Videos | Local | MappingLine { Label = Musique, Source = DataBridge_PC-ANTHOW_Anthow_2026-10-06_22-21\Personal\Music, Destination = D:\ProfileCopy-Tests\E2E-20\A\Profil\Musique, Note = Local, IsOneDrive = False } | Musique | DataBridge_PC-ANTHOW_Anthow_2026-10-06_22-21\Personal\Music | D:\ProfileCopy-Tests\E2E-20\A\Profil\Musique | Local | MappingLine { Label = Compta 2025, Source = DataBridge_PC-ANTHOW_Anthow_2026-10-06_22-21\Additional\Compta 2025, Destination = D:\ProfileCopy-Tests\E2E-20\A\Extra\Compta 2025, Note = destination originale, IsOneDrive = False } | Compta 2025 | DataBridge_PC-ANTHOW_Anthow_2026-10-06_22-21\Additional\Compta 2025 | D:\ProfileCopy-Tests\E2E-20\A\Extra\Compta 2025 | destination originale | MappingLine { Label = Signatures Outlook, Source = DataBridge_PC-ANTHOW_Anthow_2026-10-06_22-21\Outlook\Signatures, Destination = D:\ProfileCopy-Tests\E2E-20\A\AppData\Roaming\Microsoft\Signatures, Note = Outlook classique, IsOneDrive = False } | Signatures Outlook | DataBridge_PC-ANTHOW_Anthow_2026-10-06_22-21\Outlook\Signatures | D:\ProfileCopy-Tests\E2E-20\A\AppData\Roaming\Microsoft\Signatures | Outlook classique
+[22:22:20] Volumes : VolumeLine { Root = D:, Needed = 5.8 Mo nécessaires, Free = 3.2 To disponibles, Ok = True } | D: | 5.8 Mo nécessaires · 3.2 To disponibles
+[22:22:24] Résultat : Restauration terminée
+[22:22:24] Chiffres : restaurés 10 | volume 681 Ko | remplacés 1 | conservés 1 | erreurs 0 | durée 00:01
+[22:22:24] Contrôle : Sélection : 15 fichiers  ·  à écrire : 10  ·  écrits : 10  ·  en erreur : 0  ·  identiques : 4
+[22:22:24] Données : 10 fichiers restaurés · 681 Ko | dont 1 fichier existant remplacé | 1 fichier existant conservé | 4 fichiers déjà identiques | 0 erreur
+[22:22:24] Wi-Fi : 1 profil déjà présent conservé | Windows : Fond d'écran restauré (application désactivée pour ce test).
+[22:22:24] Journal : D:\ProfileCopy-Tests\E2E-20\A\AppData\Local\DataBridge\Logs\restore-2026-10-06_22-22.log
+[22:22:25] Fichiers supprimés revenus : 6 / 6 | contenu identique : 6 / 6 | date de modification conservée : 6 / 6
+[22:22:25] ISO décochée non restaurée : True
+[22:22:25] plan.txt (plus récent localement) conservé : True
+[22:22:25] notes.txt (plus ancien localement) remplacé : True
+[22:22:25] Signatures restaurées dans l'environnement de test : 3 fichier(s) ; vraies signatures inchangées
+[22:22:25] Fond d'écran restauré (fichier, sans application en test) : True
+[22:22:25] Journal : en-tête « Journal de restauration » : True | correspondances : True | clé Wi-Fi absente : True
+[22:22:27] « Terminer » ramène à l'accueil : True

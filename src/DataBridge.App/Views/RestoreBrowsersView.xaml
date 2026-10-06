@@ -1,0 +1,162 @@
+<UserControl x:Class="DataBridge.App.Views.RestoreBrowsersView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:DataBridge.App.ViewModels">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="28,24,28,24">
+            <DockPanel>
+                <Button DockPanel.Dock="Right" Command="{Binding RefreshCommand}" Style="{StaticResource GhostButton}" VerticalAlignment="Top"
+                        AutomationProperties.AutomationId="RefreshRestoreBrowsersButton" AutomationProperties.Name="Actualiser">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource Icon}" Text="&#xE72C;" FontSize="12" Margin="0,0,6,0" />
+                        <TextBlock Text="Actualiser" />
+                    </StackPanel>
+                </Button>
+                <StackPanel>
+                    <TextBlock Text="{Binding PageTitle}" Style="{StaticResource PageTitle}" />
+                    <TextBlock Style="{StaticResource PageSubtitle}"
+                               Text="Chaque profil sauvegardé est restauré dans un profil de ce PC que vous choisissez : rien n'est écrasé sans association explicite. Les fichiers remplacés sont d'abord copiés en sécurité." />
+                </StackPanel>
+            </DockPanel>
+
+            <!-- Protected data (always visible) -->
+            <Border Style="{StaticResource Banner}" Margin="0,16,0,0" AutomationProperties.AutomationId="ProtectedDataWarning">
+                <DockPanel>
+                    <TextBlock Style="{StaticResource Icon}" Text="&#xE72E;" FontSize="16" Foreground="{StaticResource Warning}" VerticalAlignment="Top" Margin="0,1,12,0" />
+                    <StackPanel>
+                        <TextBlock Text="Données protégées" FontWeight="SemiBold" />
+                        <TextBlock TextWrapping="Wrap" Margin="0,2,0,0"
+                                   Text="Les mots de passe, cookies, sessions et certaines données enregistrées peuvent être protégés par Windows et ne sont pas garantis lors d'une restauration sur un autre PC." />
+                        <TextBlock TextWrapping="Wrap" Margin="0,4,0,0" Style="{StaticResource Small}"
+                                   Text="Les mots de passe doivent être réimportés séparément s'ils ont été exportés manuellement." />
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}" Margin="0,14,0,0" Visibility="{Binding IsPresent, Converter={StaticResource Hidden}}"
+                    AutomationProperties.AutomationId="BrowsersAbsent">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Style="{StaticResource Icon}" Text="&#xE946;" FontSize="14" Foreground="{StaticResource TextTertiary}" Margin="0,1,10,0" />
+                    <TextBlock Text="Non présent dans cette sauvegarde." Foreground="{StaticResource TextMuted}" />
+                </StackPanel>
+            </Border>
+
+            <ItemsControl ItemsSource="{Binding Cards}" Margin="0,14,0,0">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type vm:RestoreBrowserCardViewModel}">
+                        <Border Style="{StaticResource Card}" Margin="0,0,0,12" AutomationProperties.AutomationId="{Binding AutomationId}" AutomationProperties.Name="{Binding Name}">
+                            <StackPanel>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border Style="{StaticResource IconTile}" Width="40" Height="40" VerticalAlignment="Center">
+                                        <TextBlock Style="{StaticResource Icon}" Text="&#xE774;" FontSize="18" />
+                                    </Border>
+                                    <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="14" />
+                                            <Border Style="{StaticResource WarningBadge}" Visibility="{Binding IsRunning, Converter={StaticResource Visible}}">
+                                                <TextBlock Text="Ouvert sur ce PC" />
+                                            </Border>
+                                        </StackPanel>
+                                        <TextBlock Text="Profils de la sauvegarde" Style="{StaticResource Small}" Margin="0,2,0,0" />
+                                    </StackPanel>
+                                    <TextBlock Grid.Column="2" Width="230" Text="{Binding SelectionText}" Style="{StaticResource Small}" TextAlignment="Right" VerticalAlignment="Center" />
+                                </Grid>
+
+                                <Border Style="{StaticResource Banner}" Margin="0,12,0,0" Padding="10,8" Visibility="{Binding IsRunning, Converter={StaticResource Visible}}">
+                                    <DockPanel>
+                                        <TextBlock Style="{StaticResource Icon}" Text="&#xE7BA;" FontSize="13" Foreground="{StaticResource Warning}" VerticalAlignment="Top" Margin="0,1,8,0" />
+                                        <TextBlock Text="{Binding RunningText}" TextWrapping="Wrap" FontSize="12.5" />
+                                    </DockPanel>
+                                </Border>
+
+                                <!-- One block per saved profile: source on the left, destination choice on the right -->
+                                <ItemsControl ItemsSource="{Binding Profiles}" Margin="0,10,0,0">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate DataType="{x:Type vm:RestoreBrowserProfileViewModel}">
+                                            <Border BorderBrush="{StaticResource Border}" BorderThickness="0,1,0,0" Padding="0,10,0,6">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="*" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel Margin="0,0,16,0">
+                                                        <TextBlock Text="PROFIL SAUVEGARDÉ" Style="{StaticResource Label}" Margin="30,0,0,2" />
+                                                        <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}" Height="32" VerticalContentAlignment="Center" HorizontalAlignment="Left"
+                                                                  AutomationProperties.AutomationId="RestoreProfileCheck" AutomationProperties.Name="{Binding AutomationName}">
+                                                            <Grid VerticalAlignment="Center">
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="Auto" />
+                                                                    <ColumnDefinition Width="Auto" />
+                                                                    <ColumnDefinition Width="Auto" />
+                                                                </Grid.ColumnDefinitions>
+                                                                <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                                                <TextBlock Grid.Column="1" Text="{Binding Folder, StringFormat='  ({0})'}" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" />
+                                                                <Border Grid.Column="2" Style="{StaticResource AccentBadge}" VerticalAlignment="Center"
+                                                                        Visibility="{Binding IsActive, Converter={StaticResource Visible}}">
+                                                                    <TextBlock Text="Profil actif" />
+                                                                </Border>
+                                                            </Grid>
+                                                        </CheckBox>
+                                                        <TextBlock Text="{Binding Account}" Style="{StaticResource Small}" Margin="30,0,0,0"
+                                                                   Visibility="{Binding Account, Converter={StaticResource NotEmpty}}" />
+                                                    </StackPanel>
+                                                    <StackPanel Grid.Column="1">
+                                                        <TextBlock Text="RESTAURER VERS" Style="{StaticResource Label}" Margin="0,0,0,4" />
+                                                        <ItemsControl ItemsSource="{Binding Options}" AutomationProperties.AutomationId="RestoreTargets">
+                                                            <ItemsControl.ItemTemplate>
+                                                                <DataTemplate DataType="{x:Type vm:RestoreTargetOptionViewModel}">
+                                                                    <RadioButton GroupName="{Binding GroupName}" IsChecked="{Binding IsChosen, Mode=TwoWay}" Margin="0,4"
+                                                                                 AutomationProperties.Name="{Binding Label}">
+                                                                        <StackPanel>
+                                                                            <TextBlock Text="{Binding Label}" FontWeight="SemiBold" />
+                                                                            <TextBlock Text="{Binding Detail}" Style="{StaticResource Small}" TextWrapping="Wrap"
+                                                                                       Visibility="{Binding Detail, Converter={StaticResource NotEmpty}}" />
+                                                                        </StackPanel>
+                                                                    </RadioButton>
+                                                                </DataTemplate>
+                                                            </ItemsControl.ItemTemplate>
+                                                        </ItemsControl>
+                                                        <TextBlock Text="{Binding TargetSummary, StringFormat='→ {0}'}" FontSize="12" Margin="0,4,0,0" TextTrimming="CharacterEllipsis"
+                                                                   AutomationProperties.AutomationId="RestoreTargetSummary">
+                                                            <TextBlock.Style>
+                                                                <Style TargetType="TextBlock">
+                                                                    <Setter Property="Foreground" Value="{StaticResource TextSecondary}" />
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding NeedsChoice}" Value="True">
+                                                                            <Setter Property="Foreground" Value="{StaticResource WarningAccent}" />
+                                                                            <Setter Property="FontWeight" Value="SemiBold" />
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </TextBlock.Style>
+                                                        </TextBlock>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <ItemsControl ItemsSource="{Binding Description}" Margin="0,6,0,0">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <DockPanel Margin="0,2">
+                                                <TextBlock Style="{StaticResource Icon}" Text="&#xE946;" FontSize="11" Foreground="{StaticResource TextTertiary}" Margin="0,2,8,0" VerticalAlignment="Top" />
+                                                <TextBlock Text="{Binding}" Style="{StaticResource Small}" TextWrapping="Wrap" />
+                                            </DockPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

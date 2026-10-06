@@ -1,0 +1,82 @@
+# DataBridge — Visual Studio / C# / .NET / WPF
+
+# Build output
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]64/
+[Ll]og/
+[Ll]ogs/
+
+# Local self-contained publish (DataBridge.exe is distributed through GitHub Releases)
+publish/
+*.sha256.txt
+
+# Visual Studio / Rider / VS Code
+.vs/
+.idea/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.userprefs
+*.rsuser
+_ReSharper*/
+*.DotSettings.user
+
+# Tests and coverage
+[Tt]est[Rr]esult*/
+*.trx
+*.coverage
+*.coveragexml
+coverage*.json
+coverage*.xml
+
+# NuGet
+*.nupkg
+*.snupkg
+packages/
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# Caches and temporary files
+*.cache
+*.tmp
+*.temp
+*.log
+*.pdb
+*.ilk
+*.obj
+*.ipch
+*.aps
+*.ncb
+*.opendb
+*.opensdf
+*.sdf
+*.VC.db
+*.VC.VC.opendb
+*.binlog
+*.databridge-tmp
+~$*
+*~
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Personal data that must never be versioned (backups, restore safety copies, real Wi-Fi exports, signing keys)
+DataBridge_*/
+itelium_ProfileCopy_*/
+ProfileCopy_*/
+RestoreSafety/
+Wi-Fi-*.xml
+*.pfx
+*.p12
+*.pem
+*.key
+*.snk

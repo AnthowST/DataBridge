@@ -1,0 +1,24 @@
+﻿[22:12:49] ===== PARTIE B : sauvegarde 1.3 réelle (ancienne génération) + navigateurs ouverts =====
+[22:12:49] Ouverture de Chrome, Edge et Firefox…
+[22:12:57] Processus avant : chrome=32 msedge=11 firefox=11 | msedgewebview2=16
+[22:13:12] Sauvegarde 1.3 lue : (absent) | PC PC-ANTHOW | DataBridge 1.x | catégories : Dossiers personnels | Dossiers personnels | Signatures Outlook | Signatures Outlook | Navigateurs (Chrome, Edge, Firefox) | Navigateurs (Chrome, Edge, Firefox) | 1 profil Wi-Fi | 1 profil Wi-Fi | Fond d'écran | Fond d'écran
+[22:13:20] Profil sauvegardé Google Chrome Default [On] → Nouveau profil « Default »
+[22:13:20] Profil sauvegardé Microsoft Edge Default [On] → Nouveau profil « Default »
+[22:13:20] Profil sauvegardé Mozilla Firefox m53emrtd.default-release [On] → Nouveau profil Firefox « default-release »
+[22:13:24] Résumé : à restaurer 986 Mo | fichiers 5 757 | avertissements : Sauvegarde DataBridge ancienne génération / MappingLine { Label = Bureau, Source = DataBridge_PC-ANTHOW_Anthow_2026-10-06_17-11\Personal\Desktop, Destination = D:\ProfileCopy-Tests\E2E-20\B\Profil\Bureau, Note = Local, IsOneDrive = False } / MappingLine { Label = Signatures Outlook, Source = DataBridge_PC-ANTHOW_Anthow_2026-10-06_17-11\Outlook\Signatures, Destination = D:\ProfileCopy-Tests\E2E-20\B\AppData\Roaming\Microsoft\Signatures, Note = Outlook classique, IsOneDrive = False } / MappingLine { Label = Google Chrome — Votre Chrome, Source = DataBridge_PC-ANTHOW_Anthow_2026-10-06_17-11\Browsers\Chrome\User Data\Default, Destination = D:\ProfileCopy-Tests\E2E-20\B\AppData\Local\Google\Chrome\User Data\Default, Note = Nouveau profil « Default » (le navigateur n'a pas encore de profil sur ce PC : il l'utilisera au premier démarrage), IsOneDrive = False } / MappingLine { Label = Microsoft Edge — Profil 1, Source = DataBridge_PC-ANTHOW_Anthow_2026-10-06_17-11\Browsers\Edge\User Data\Default, Destination = D:\ProfileCopy-Tests\E2E-20\B\AppData\Local\Microsoft\Edge\User Data\Default, Note = Nouveau profil « Default » (le navigateur n'a pas encore de profil sur ce PC : il l'utilisera au premier démarrage), IsOneDrive = False } / MappingLine { Label = Mozilla Firefox — default-release, Source = DataBridge_PC-ANTHOW_Anthow_2026-10-06_17-11\Browsers\Firefox\Profiles\m53emrtd.default-release, Destination = D:\ProfileCopy-Tests\E2E-20\B\AppData\Roaming\Mozilla\Firefox\Profiles\voxsowtw.default-release-databridge, Note = Nouveau profil Firefox « default-release » (créé par DataBridge et utilisé par défaut), IsOneDrive = False } / Sauvegarde ancienne génération : les chemins d'origine sont lus dans copy-log.txt quand ils y figurent. / Google Chrome est ouvert : il sera fermé complètement au lancement de la restauration, après votre confirmation. / Microsoft Edge est ouvert : il sera fermé complètement au lancement de la restauration, après votre confirmation. / Mozilla Firefox est ouvert : il sera fermé complètement au lancement de la restauration, après votre confirmation.
+[22:13:24] Avant lancement : chrome=32 msedge=11 firefox=11 | msedgewebview2=16
+[22:13:27] Modale : Fermeture des navigateurs | (absent) | Google Chrome, Microsoft Edge, Mozilla Firefox
+[22:13:27] Avertissement : Les navigateurs seront fermés de force. / Les données non enregistrées peuvent être perdues. | boutons : Annuler / Fermer et continuer
+[22:13:28] Après confirmation : chrome=0 msedge=0 firefox=0 | msedgewebview2=16
+[22:13:28] msedgewebview2 : 16 / 16 processus d'avant toujours actifs (mêmes PID)
+[22:13:34] En cours : Dossiers personnels — Bureau | 47 / 5 757 fichiers restaurés | 154 Mo / 986 Mo | 16 %
+[22:16:12] Résultat : Restauration terminée avec des avertissements
+[22:16:13] Chiffres : restaurés 5 757 | volume 986 Mo | remplacés 0 | erreurs 0 | durée 02:42
+[22:16:13] Navigateurs : Chrome restauré (Votre Chrome → Nouveau profil « Default ») | Edge restauré (Profil 1 → Nouveau profil « Default ») | Firefox restauré (default-release → Nouveau profil Firefox « default-release ») | Mots de passe, cookies et sessions non garantis
+[22:16:13] Wi-Fi : 1 profil déjà présent conservé | Windows : Fond d'écran restauré. Actualisation Windows à effectuer manuellement.
+[22:16:13] Journal : D:\ProfileCopy-Tests\E2E-20\B\AppData\Local\DataBridge\Logs\restore-2026-10-06_22-13.log
+[22:16:13] Chrome restauré : Bookmarks False | Preferences True | Login Data False | Cookies False | Local State False
+[22:16:13] Edge restauré : Bookmarks True | Login Data False | Web Data False
+[22:16:13] Firefox profiles.ini : [General] / StartWithLastProfile=1 / Version=2 /  / [Profile0] / Name=default-release (DataBridge) / IsRelative=1 / Path=Profiles/voxsowtw.default-release-databridge / Default=1
+[22:16:13] Bureau restauré dans l'environnement de test : 47 fichier(s)
+[22:16:13] Navigateurs réels : profil Chrome réel non modifié (Local State réel inchangé : True)

@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <!-- Produces "DataBridge.exe". -->
+    <AssemblyName>DataBridge</AssemblyName>
+    <RootNamespace>DataBridge.App</RootNamespace>
+    <!-- asInvoker: never requests elevation, never shows a UAC prompt. -->
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Product>DataBridge</Product>
+    <AssemblyTitle>DataBridge</AssemblyTitle>
+    <FileDescription>DataBridge</FileDescription>
+    <Description>Copiez, sauvegardez et restaurez vos données</Description>
+    <Company>DataBridge</Company>
+    <Copyright>DataBridge</Copyright>
+    <Version>2.0.0</Version>
+    <NoWarn>$(NoWarn);CA1416</NoWarn>
+  </PropertyGroup>
+
+  <!-- Official DataBridge icon (16 to 256 px): embedded in DataBridge.exe (Explorer, taskbar, Alt+Tab) and as a WPF
+       resource for the window and dialog title bars. Nothing is read from the source folder at run time. -->
+  <PropertyGroup>
+    <ApplicationIcon>Assets\Branding\databridge-icon.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DataBridge.Core\DataBridge.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Embedded WPF resources (pack://application): the exe never reads the source folder at run time. -->
+    <Resource Include="Assets\Branding\databridge-icon.ico" />
+    <Resource Include="Assets\Branding\databrige-logo.png" />
+  </ItemGroup>
+
+</Project>

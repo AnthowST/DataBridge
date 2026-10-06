@@ -1,0 +1,174 @@
+<UserControl x:Class="DataBridge.App.Views.HomeView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:DataBridge.App.ViewModels"
+             xmlns:infra="clr-namespace:DataBridge.App.Infrastructure"
+             xmlns:core="clr-namespace:DataBridge.Core;assembly=DataBridge.Core">
+    <UserControl.Resources>
+        <Style x:Key="Pill" TargetType="Border">
+            <Setter Property="CornerRadius" Value="14" />
+            <Setter Property="Padding" Value="10,4,12,5" />
+            <Setter Property="Margin" Value="0,0,8,8" />
+            <Setter Property="Background" Value="{StaticResource BackgroundTertiary}" />
+            <Setter Property="BorderBrush" Value="{StaticResource BorderPrimary}" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+        <Style x:Key="InfoKey" TargetType="TextBlock" BasedOn="{StaticResource Small}">
+            <Setter Property="Margin" Value="0,3" />
+            <Setter Property="Foreground" Value="{StaticResource TextTertiary}" />
+        </Style>
+        <Style x:Key="InfoValue" TargetType="TextBlock">
+            <Setter Property="Margin" Value="0,3,24,3" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        </Style>
+    </UserControl.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="28,24,28,24" MaxWidth="940" HorizontalAlignment="Left">
+
+            <!-- ============================================ Current feature (the brand itself is in the header) -->
+            <Border Style="{StaticResource Card}" Padding="0" AutomationProperties.AutomationId="HomeHero">
+                <Grid>
+                    <Border Height="3" VerticalAlignment="Top" Background="{StaticResource BrandGradient}" CornerRadius="10,10,0,0" />
+                    <StackPanel Margin="28,28,28,24">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <!-- Small DataBridge symbol only (never the full horizontal logo here) -->
+                            <Border Width="52" Height="52" CornerRadius="13" Background="{StaticResource InfoSoft}" BorderBrush="{StaticResource InfoBorder}"
+                                    BorderThickness="1" VerticalAlignment="Center" Margin="0,0,18,0"
+                                    Visibility="{Binding Source={x:Static infra:BrandAssets.Symbol}, Converter={StaticResource Visible}}">
+                                <Image Source="{x:Static infra:BrandAssets.Symbol}" Width="34" Height="34" Stretch="Uniform"
+                                       RenderOptions.BitmapScalingMode="HighQuality" AutomationProperties.AutomationId="HomeSymbol" />
+                            </Border>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <TextBlock Text="Sauvegarde du profil" FontSize="24" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}"
+                                           AutomationProperties.AutomationId="HomeTitle" />
+                                <TextBlock Text="{x:Static core:AppInfo.Baseline}" FontSize="14" Foreground="{StaticResource SelectionAccent}" Margin="0,3,0,0"
+                                           AutomationProperties.AutomationId="HomeBaseline" />
+                            </StackPanel>
+                        </Grid>
+                        <TextBlock Style="{StaticResource PageSubtitle}" FontSize="13.5" Margin="0,18,0,0" MaxWidth="700" HorizontalAlignment="Left"
+                                   Text="DataBridge sauvegarde les données importantes de la session Windows actuelle vers le support de votre choix. Rien n'est copié avant votre validation." />
+
+                        <WrapPanel Margin="0,16,0,0">
+                            <Border Style="{StaticResource Pill}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Style="{StaticResource Icon}" Text="&#xEA18;" FontSize="12" Foreground="{StaticResource TealText}" Margin="0,0,7,0" />
+                                    <TextBlock Text="Sans droits administrateur" FontSize="12" Foreground="{StaticResource TextSecondary}" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource Pill}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE77B;" FontSize="12" Foreground="{StaticResource TealText}" Margin="0,0,7,0" />
+                                    <TextBlock Text="Session Windows actuelle" FontSize="12" Foreground="{StaticResource TextSecondary}" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource Pill}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE8A5;" FontSize="12" Foreground="{StaticResource TealText}" Margin="0,0,7,0" />
+                                    <TextBlock Text="Journal détaillé" FontSize="12" Foreground="{StaticResource TextSecondary}" />
+                                </StackPanel>
+                            </Border>
+                        </WrapPanel>
+
+                        <Button Command="{Binding StartCommand}" Style="{StaticResource PrimaryButton}" HorizontalAlignment="Left" Margin="0,10,0,0" Padding="20,10"
+                                AutomationProperties.AutomationId="StartButton" AutomationProperties.Name="Commencer">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Commencer : choisir la destination" />
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE76C;" FontSize="10" Margin="10,1,0,0" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- ============================================ This PC -->
+            <TextBlock Text="Ce poste" Style="{StaticResource SectionTitle}" Margin="0,24,0,10" />
+            <Border Style="{StaticResource Card}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="64" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="68" />
+                        <ColumnDefinition Width="1.35*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition /><RowDefinition /><RowDefinition />
+                    </Grid.RowDefinitions>
+                    <Border Grid.RowSpan="3" Style="{StaticResource IconTile}" Width="44" Height="44" CornerRadius="11" Margin="0,0,18,0">
+                        <TextBlock Style="{StaticResource Icon}" Text="&#xE7F4;" FontSize="20" />
+                    </Border>
+
+                    <TextBlock Grid.Column="1" Text="PC" Style="{StaticResource InfoKey}" />
+                    <TextBlock Grid.Column="2" Text="{Binding Profile.MachineName}" Style="{StaticResource InfoValue}" />
+                    <TextBlock Grid.Row="1" Grid.Column="1" Text="Session" Style="{StaticResource InfoKey}" />
+                    <TextBlock Grid.Row="1" Grid.Column="2" Style="{StaticResource InfoValue}">
+                        <Run Text="{Binding Profile.UserName, Mode=OneWay}" /><Run Text="{Binding Profile.UserDomain, StringFormat=' · {0}', Mode=OneWay}" FontWeight="Normal" Foreground="{StaticResource TextSecondary}" />
+                    </TextBlock>
+                    <TextBlock Grid.Row="2" Grid.Column="1" Text="Profil" Style="{StaticResource InfoKey}" />
+                    <TextBlock Grid.Row="2" Grid.Column="2" Text="{Binding Profile.ProfilePath}" Style="{StaticResource InfoValue}" ToolTip="{Binding Profile.ProfilePath}" />
+
+                    <TextBlock Grid.Column="3" Text="Windows" Style="{StaticResource InfoKey}" />
+                    <TextBlock Grid.Column="4" Text="{Binding Profile.WindowsVersion}" Style="{StaticResource InfoValue}" FontWeight="Normal" ToolTip="{Binding Profile.WindowsVersion}" />
+                    <TextBlock Grid.Row="1" Grid.Column="3" Text="Date" Style="{StaticResource InfoKey}" />
+                    <TextBlock Grid.Row="1" Grid.Column="4" Text="{Binding Now, StringFormat='dd.MM.yyyy  HH:mm', Mode=OneWay}" Style="{StaticResource InfoValue}" FontWeight="Normal" />
+                    <TextBlock Grid.Row="2" Grid.Column="3" Text="Droits" Style="{StaticResource InfoKey}" />
+                    <TextBlock Grid.Row="2" Grid.Column="4" Text="{Binding Profile.ElevationLabel}" Style="{StaticResource InfoValue}" Foreground="{StaticResource SuccessAccent}"
+                               ToolTip="{Binding ElevationDetail}" AutomationProperties.AutomationId="HomeElevation" />
+                </Grid>
+            </Border>
+            <TextBlock Text="{Binding ElevationDetail}" Style="{StaticResource Small}" TextWrapping="Wrap" Margin="2,8,0,0" />
+
+            <!-- ============================================ Detected -->
+            <TextBlock Text="Éléments détectés" Style="{StaticResource SectionTitle}" Margin="0,22,0,10" />
+            <ItemsControl ItemsSource="{Binding Tiles}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <UniformGrid Columns="3" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type vm:DetectionTile}">
+                        <Border Style="{StaticResource Card}" Margin="0,0,10,10" Padding="14,13">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Border x:Name="Tile" Style="{StaticResource IconTile}" Width="34" Height="34">
+                                    <TextBlock Style="{StaticResource Icon}" Text="{Binding Glyph}" FontSize="15" />
+                                </Border>
+                                <StackPanel Grid.Column="1" Margin="12,0,0,0">
+                                    <TextBlock Text="{Binding Title}" Style="{StaticResource Small}" />
+                                    <TextBlock Text="{Binding Value}" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}" TextTrimming="CharacterEllipsis"
+                                               ToolTip="{Binding Value}" Margin="0,1,0,1" />
+                                    <TextBlock Text="{Binding Detail}" Style="{StaticResource PathText}" FontSize="11" Foreground="{StaticResource TextTertiary}" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                        <DataTemplate.Triggers>
+                            <DataTrigger Binding="{Binding Ok}" Value="False">
+                                <Setter TargetName="Tile" Property="Background" Value="{StaticResource SurfaceMuted}" />
+                                <Setter TargetName="Tile" Property="TextElement.Foreground" Value="{StaticResource TextTertiary}" />
+                            </DataTrigger>
+                        </DataTemplate.Triggers>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <Border Style="{StaticResource InfoBanner}" Margin="0,6,10,0">
+                <DockPanel>
+                    <TextBlock Style="{StaticResource Icon}" Text="&#xE946;" Foreground="{StaticResource InfoAccent}" VerticalAlignment="Top" Margin="0,1,10,0" />
+                    <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TextSecondary}"
+                               Text="Les tailles des dossiers sont calculées en arrière-plan : vous pouvez avancer sans attendre. Seul le profil de la session actuelle est traité." />
+                </DockPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

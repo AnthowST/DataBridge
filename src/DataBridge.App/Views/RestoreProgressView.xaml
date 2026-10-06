@@ -1,0 +1,340 @@
+﻿<UserControl x:Class="DataBridge.App.Views.RestoreProgressView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:DataBridge.App.ViewModels"
+             xmlns:copy="clr-namespace:DataBridge.Core.Copy;assembly=DataBridge.Core">
+    <UserControl.Resources>
+        <DataTemplate x:Key="ResultLineTemplate" DataType="{x:Type vm:ResultLine}">
+            <DockPanel Margin="0,4">
+                <Border x:Name="IconBg" DockPanel.Dock="Left" Width="22" Height="22" CornerRadius="11" Background="{StaticResource SuccessSoft}"
+                        VerticalAlignment="Top" Margin="0,0,10,0">
+                    <TextBlock x:Name="Icon" Style="{StaticResource Icon}" Text="&#xE73E;" FontSize="11" FontWeight="Bold" Foreground="{StaticResource SuccessAccent}" />
+                </Border>
+                <TextBlock Text="{Binding Text}" FontSize="13.5" TextWrapping="Wrap" VerticalAlignment="Center" />
+            </DockPanel>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding IsWarn}" Value="True">
+                    <Setter TargetName="Icon" Property="Text" Value="&#xE7BA;" />
+                    <Setter TargetName="Icon" Property="FontWeight" Value="Normal" />
+                    <Setter TargetName="Icon" Property="Foreground" Value="{StaticResource WarningAccent}" />
+                    <Setter TargetName="IconBg" Property="Background" Value="{StaticResource WarningSoft}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsOff}" Value="True">
+                    <Setter TargetName="Icon" Property="Foreground" Value="{StaticResource TextTertiary}" />
+                    <Setter TargetName="IconBg" Property="Background" Value="{StaticResource SurfaceMuted}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsError}" Value="True">
+                    <Setter TargetName="Icon" Property="Text" Value="&#xE711;" />
+                    <Setter TargetName="Icon" Property="Foreground" Value="{StaticResource ErrorAccent}" />
+                    <Setter TargetName="IconBg" Property="Background" Value="{StaticResource ErrorSoft}" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+
+        <Style x:Key="CounterCard" TargetType="Border" BasedOn="{StaticResource Card}">
+            <Setter Property="Padding" Value="14,12" />
+        </Style>
+        <Style x:Key="KpiValue" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="22" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+            <Setter Property="Margin" Value="0,4,0,0" />
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="28,24,28,22">
+        <!-- ===================================================== Running -->
+        <DockPanel Visibility="{Binding IsFinished, Converter={StaticResource Hidden}}">
+            <StackPanel DockPanel.Dock="Top">
+                <TextBlock Text="Restauration en cours" Style="{StaticResource PageTitle}" AutomationProperties.AutomationId="RestoreTitle" />
+                <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                    <TextBlock Style="{StaticResource Icon}" Text="&#xE896;" FontSize="12" Foreground="{StaticResource SelectionAccent}" Margin="0,0,7,0" />
+                    <TextBlock Text="{Binding BackupPath, StringFormat='Depuis {0}'}" FontFamily="{StaticResource MonoFont}" FontSize="12" Foreground="{StaticResource TextSecondary}"
+                               TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+            </StackPanel>
+
+            <Border DockPanel.Dock="Top" Style="{StaticResource Card}" Margin="0,16,0,0" Padding="0">
+                <Grid>
+                    <Border Height="3" VerticalAlignment="Top" Background="{StaticResource BrandGradient}" CornerRadius="10,10,0,0" />
+                    <StackPanel Margin="22,20,22,18">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Bottom" Margin="0,0,16,0">
+                                <TextBlock Text="{Binding Category}" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource SelectionAccent}"
+                                           AutomationProperties.AutomationId="RestoreCategory" />
+                                <TextBlock Text="{Binding FilesText}" FontSize="17" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}" Margin="0,4,0,0"
+                                           AutomationProperties.AutomationId="RestoreFiles" />
+                                <TextBlock Text="{Binding BytesText}" Foreground="{StaticResource TextSecondary}" Margin="0,2,0,0" AutomationProperties.AutomationId="RestoreBytes" />
+                            </StackPanel>
+                            <TextBlock Grid.Column="1" Text="{Binding PercentText}" FontSize="34" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}"
+                                       VerticalAlignment="Bottom" AutomationProperties.AutomationId="RestorePercent" />
+                        </Grid>
+                        <ProgressBar Value="{Binding Percent, Mode=OneWay}" Maximum="100" Height="12" Margin="0,14,0,0" AutomationProperties.AutomationId="RestoreProgressBar"
+                                     IsIndeterminate="{Binding IsCounting}" />
+                        <WrapPanel Margin="0,12,0,0">
+                            <StackPanel Orientation="Horizontal" Margin="0,0,22,0">
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE916;" FontSize="12" Foreground="{StaticResource TextTertiary}" Margin="0,0,6,0" />
+                                <TextBlock Style="{StaticResource Small}"><Run Text="Écoulé " /><Run Text="{Binding ElapsedText, Mode=OneWay}" Foreground="{StaticResource TextStrong}" FontWeight="SemiBold" /></TextBlock>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,22,0" Visibility="{Binding SpeedText, Converter={StaticResource NotEmpty}}">
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xEC4A;" FontSize="12" Foreground="{StaticResource TextTertiary}" Margin="0,0,6,0" />
+                                <TextBlock Text="{Binding SpeedText}" Style="{StaticResource Small}" Foreground="{StaticResource TextStrong}" FontWeight="SemiBold" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Visibility="{Binding RemainingText, Converter={StaticResource NotEmpty}}">
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE823;" FontSize="12" Foreground="{StaticResource TextTertiary}" Margin="0,0,6,0" />
+                                <TextBlock Text="{Binding RemainingText}" Style="{StaticResource Small}" Foreground="{StaticResource TextStrong}" FontWeight="SemiBold" />
+                            </StackPanel>
+                        </WrapPanel>
+                        <Border Background="{StaticResource BackgroundTertiary}" BorderBrush="{StaticResource BorderPrimary}" BorderThickness="1" CornerRadius="7"
+                                Padding="10,7" Margin="0,14,0,0">
+                            <DockPanel>
+                                <TextBlock DockPanel.Dock="Left" Style="{StaticResource Icon}" Text="&#xE8A5;" FontSize="12" Foreground="{StaticResource TextTertiary}" Margin="0,0,8,0" />
+                                <TextBlock Text="{Binding CurrentFile}" FontFamily="{StaticResource MonoFont}" FontSize="11.5" Foreground="{StaticResource TextSecondary}"
+                                           TextTrimming="CharacterEllipsis" ToolTip="{Binding CurrentFile}" AutomationProperties.AutomationId="RestoreCurrentFile" />
+                            </DockPanel>
+                        </Border>
+                        <TextBlock Text="{Binding DetailText}" Style="{StaticResource Small}" Margin="0,8,0,0" Visibility="{Binding DetailText, Converter={StaticResource NotEmpty}}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <UniformGrid DockPanel.Dock="Top" Columns="4" Margin="0,12,0,0">
+                <Border Style="{StaticResource CounterCard}" Margin="0,0,8,0">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE783;" FontSize="12" Foreground="{StaticResource ErrorAccent}" Margin="0,0,6,0" />
+                            <TextBlock Text="ERREURS" Style="{StaticResource Label}" />
+                        </StackPanel>
+                        <TextBlock Text="{Binding Errors}" Style="{StaticResource KpiValue}" Foreground="{StaticResource ErrorAccent}" AutomationProperties.AutomationId="RestoreErrors" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource CounterCard}" Margin="4,0,4,0">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE8EE;" FontSize="12" Foreground="{StaticResource SelectionAccent}" Margin="0,0,6,0" />
+                            <TextBlock Text="REMPLACÉS" Style="{StaticResource Label}" />
+                        </StackPanel>
+                        <TextBlock Text="{Binding Replaced}" Style="{StaticResource KpiValue}" AutomationProperties.AutomationId="RestoreReplacedCount" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource CounterCard}" Margin="4,0,4,0">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE72E;" FontSize="12" Foreground="{StaticResource TealText}" Margin="0,0,6,0" />
+                            <TextBlock Text="EXISTANTS CONSERVÉS" Style="{StaticResource Label}" />
+                        </StackPanel>
+                        <TextBlock Text="{Binding KeptText}" Style="{StaticResource KpiValue}" AutomationProperties.AutomationId="RestoreKept" TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource CounterCard}" Margin="8,0,0,0">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE71B;" FontSize="12" Foreground="{StaticResource WarningAccent}" Margin="0,0,6,0" />
+                            <TextBlock Text="IGNORÉS" Style="{StaticResource Label}" />
+                        </StackPanel>
+                        <TextBlock Text="{Binding Ignored}" Style="{StaticResource KpiValue}" AutomationProperties.AutomationId="RestoreIgnored" />
+                    </StackPanel>
+                </Border>
+            </UniformGrid>
+
+            <Button DockPanel.Dock="Bottom" Command="{Binding CancelCommand}" Style="{StaticResource DangerButton}" HorizontalAlignment="Right" Margin="0,12,0,0"
+                    Padding="16,8" AutomationProperties.AutomationId="CancelRestoreButton" AutomationProperties.Name="Annuler la restauration">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Style="{StaticResource Icon}" Text="&#xE711;" FontSize="12" Margin="0,0,8,0" />
+                    <TextBlock Text="Annuler la restauration" />
+                </StackPanel>
+            </Button>
+
+            <Border Style="{StaticResource Card}" Margin="0,12,0,0" Padding="0">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Text="ÉVÉNEMENTS RÉCENTS (remplacés, conservés, erreurs, navigateurs, Wi-Fi)" Style="{StaticResource Label}" Margin="16,12,16,6" />
+                    <ListBox ItemsSource="{Binding RecentIssues}" Style="{StaticResource PlainList}" ItemContainerStyle="{StaticResource RowContainer}"
+                             AutomationProperties.AutomationId="RestoreEvents">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate DataType="{x:Type copy:CopyIssue}">
+                                <Grid Margin="10,4">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="200" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock x:Name="Kind" Text="{Binding KindLabel}" FontWeight="SemiBold" FontSize="12" Foreground="{StaticResource WarningAccent}" />
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="{Binding Path}" FontSize="12" TextTrimming="CharacterEllipsis" ToolTip="{Binding Path}" />
+                                        <TextBlock Text="{Binding Message}" FontSize="11" Foreground="{StaticResource TextSecondary}" TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
+                                </Grid>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding Severity}" Value="{x:Static copy:IssueSeverity.Error}">
+                                        <Setter TargetName="Kind" Property="Foreground" Value="{StaticResource ErrorAccent}" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Severity}" Value="{x:Static copy:IssueSeverity.Info}">
+                                        <Setter TargetName="Kind" Property="Foreground" Value="{StaticResource SelectionAccent}" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Kind}" Value="{x:Static copy:IssueKind.Restored}">
+                                        <Setter TargetName="Kind" Property="Foreground" Value="{StaticResource SuccessAccent}" />
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </DockPanel>
+            </Border>
+        </DockPanel>
+
+        <!-- ===================================================== Result -->
+        <ScrollViewer Visibility="{Binding IsFinished, Converter={StaticResource Visible}}" VerticalScrollBarVisibility="Auto">
+            <StackPanel MaxWidth="820" HorizontalAlignment="Left">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Border Width="48" Height="48" CornerRadius="24" Margin="0,0,16,0">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="{StaticResource SuccessSoft}" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ResultWarn}" Value="True">
+                                        <Setter Property="Background" Value="{StaticResource WarningSoft}" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding ResultFailed}" Value="True">
+                                        <Setter Property="Background" Value="{StaticResource ErrorSoft}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <TextBlock FontSize="21" FontWeight="Bold">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource Icon}">
+                                    <Setter Property="Text" Value="&#xE73E;" />
+                                    <Setter Property="Foreground" Value="{StaticResource SuccessAccent}" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ResultWarn}" Value="True">
+                                            <Setter Property="Text" Value="&#xE7BA;" />
+                                            <Setter Property="FontWeight" Value="Normal" />
+                                            <Setter Property="Foreground" Value="{StaticResource WarningAccent}" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding ResultFailed}" Value="True">
+                                            <Setter Property="Text" Value="&#xE783;" />
+                                            <Setter Property="FontWeight" Value="Normal" />
+                                            <Setter Property="Foreground" Value="{StaticResource ErrorAccent}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Border>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding ResultTitle}" Style="{StaticResource PageTitle}" FontSize="22" TextWrapping="Wrap" AutomationProperties.AutomationId="RestoreResultTitle" />
+                        <TextBlock Text="{Binding ResultSubtitle}" Style="{StaticResource Muted}" FontSize="12.5" Margin="0,3,0,0" TextTrimming="CharacterEllipsis" ToolTip="{Binding ResultSubtitle}" />
+                    </StackPanel>
+                </Grid>
+
+                <Border Style="{StaticResource Card}" Margin="0,14,0,0" Padding="0">
+                    <Grid>
+                        <Border Height="3" VerticalAlignment="Top" Background="{StaticResource BrandGradient}" CornerRadius="10,10,0,0" />
+                        <StackPanel Margin="22,16,22,14">
+                            <UniformGrid Columns="3">
+                                <StackPanel Margin="0,0,0,8">
+                                    <TextBlock Text="FICHIERS RESTAURÉS" Style="{StaticResource Label}" />
+                                    <TextBlock Text="{Binding KpiFiles}" Style="{StaticResource KpiValue}" AutomationProperties.AutomationId="RestoreResultFiles" />
+                                </StackPanel>
+                                <StackPanel Margin="0,0,0,8">
+                                    <TextBlock Text="VOLUME RESTAURÉ" Style="{StaticResource Label}" />
+                                    <TextBlock Text="{Binding KpiBytes}" Style="{StaticResource KpiValue}" AutomationProperties.AutomationId="RestoreResultBytes" />
+                                </StackPanel>
+                                <StackPanel Margin="0,0,0,8">
+                                    <TextBlock Text="DURÉE" Style="{StaticResource Label}" />
+                                    <TextBlock Text="{Binding DurationText}" Style="{StaticResource KpiValue}" AutomationProperties.AutomationId="RestoreResultDuration" />
+                                </StackPanel>
+                                <StackPanel>
+                                    <TextBlock Text="REMPLACÉS" Style="{StaticResource Label}" />
+                                    <TextBlock Text="{Binding KpiReplaced}" Style="{StaticResource KpiValue}" AutomationProperties.AutomationId="RestoreResultReplaced" />
+                                </StackPanel>
+                                <StackPanel>
+                                    <TextBlock Text="EXISTANTS CONSERVÉS" Style="{StaticResource Label}" />
+                                    <TextBlock Text="{Binding KpiKept}" Style="{StaticResource KpiValue}" AutomationProperties.AutomationId="RestoreResultKept" />
+                                </StackPanel>
+                                <StackPanel>
+                                    <TextBlock Text="ERREURS" Style="{StaticResource Label}" />
+                                    <TextBlock Text="{Binding KpiErrors}" AutomationProperties.AutomationId="RestoreResultErrors">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock" BasedOn="{StaticResource KpiValue}">
+                                                <Setter Property="Foreground" Value="{StaticResource SuccessAccent}" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding HasErrors}" Value="True">
+                                                        <Setter Property="Foreground" Value="{StaticResource ErrorAccent}" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </StackPanel>
+                            </UniformGrid>
+                            <TextBlock Text="{Binding ControlText}" Style="{StaticResource Small}" Margin="0,8,0,0" TextWrapping="Wrap" AutomationProperties.AutomationId="RestoreResultControl" />
+
+                            <Separator Margin="0,12" />
+
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <StackPanel Margin="0,0,16,12">
+                                    <TextBlock Text="DONNÉES" Style="{StaticResource Label}" Margin="0,0,0,6" />
+                                    <ItemsControl ItemsSource="{Binding ResultLines}" ItemTemplate="{StaticResource ResultLineTemplate}" AutomationProperties.AutomationId="RestoreResultLines" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Margin="0,0,0,12">
+                                    <TextBlock Text="NAVIGATEURS" Style="{StaticResource Label}" Margin="0,0,0,6" />
+                                    <ItemsControl ItemsSource="{Binding BrowserLines}" ItemTemplate="{StaticResource ResultLineTemplate}" AutomationProperties.AutomationId="RestoreResultBrowsers" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="1" Margin="0,0,16,0">
+                                    <TextBlock Text="WI-FI" Style="{StaticResource Label}" Margin="0,0,0,6" />
+                                    <ItemsControl ItemsSource="{Binding WifiLines}" ItemTemplate="{StaticResource ResultLineTemplate}" AutomationProperties.AutomationId="RestoreResultWifi" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="1" Grid.Column="1">
+                                    <TextBlock Text="WINDOWS" Style="{StaticResource Label}" Margin="0,0,0,6" />
+                                    <ItemsControl ItemsSource="{Binding WindowsLines}" ItemTemplate="{StaticResource ResultLineTemplate}" AutomationProperties.AutomationId="RestoreResultWindows" />
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
+                    <Button Command="{Binding OpenLogCommand}" Style="{StaticResource PrimaryButton}" Margin="0,0,10,0" Padding="18,9"
+                            AutomationProperties.AutomationId="RestoreOpenLogButton" AutomationProperties.Name="Ouvrir le journal">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE8A5;" FontSize="13" Margin="0,0,8,0" />
+                            <TextBlock Text="Ouvrir le journal" />
+                        </StackPanel>
+                    </Button>
+                    <Button Command="{Binding OpenProfileCommand}" Margin="0,0,10,0" Padding="16,9"
+                            AutomationProperties.AutomationId="RestoreOpenProfileButton" AutomationProperties.Name="Ouvrir le dossier utilisateur">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE838;" FontSize="13" Margin="0,0,8,0" Foreground="{StaticResource SelectionAccent}" />
+                            <TextBlock Text="Ouvrir le dossier utilisateur" />
+                        </StackPanel>
+                    </Button>
+                    <Button Command="{Binding FinishCommand}" Padding="18,9" AutomationProperties.AutomationId="RestoreFinishButton" AutomationProperties.Name="Terminer">
+                        <TextBlock Text="Terminer" />
+                    </Button>
+                </StackPanel>
+                <TextBlock Text="{Binding LogPath, StringFormat='Journal : {0}'}" Style="{StaticResource Small}" Margin="0,12,0,0" TextWrapping="Wrap"
+                           AutomationProperties.AutomationId="RestoreLogPath" />
+                <TextBlock Text="{Binding SafetyText}" Style="{StaticResource Small}" Margin="0,4,0,0" TextWrapping="Wrap"
+                           Visibility="{Binding SafetyText, Converter={StaticResource NotEmpty}}" />
+                <TextBlock Text="Les navigateurs ne sont pas relancés automatiquement. « Terminer » revient à l'accueil de DataBridge." Style="{StaticResource Small}"
+                           Margin="0,4,0,0" TextWrapping="Wrap" />
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>
