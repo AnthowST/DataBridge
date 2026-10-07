@@ -169,6 +169,32 @@ public static class RestorePlanner
             });
         }
 
+        // 4b. Rest of the Chrome / Edge "User Data" folder, with at least one of its profiles (never this PC's Local State).
+        foreach (var browser in s.Browsers.Where(b => b.Selected && b.Target != null && b.Browser.Kind != BrowserKind.Firefox)
+                     .Select(b => b.Browser).Distinct())
+        {
+            if (BrowserRestoreService.CommonDataExclusions(browser) is not { } excluded) continue;
+            items.Add(new RestoreItem
+            {
+                Category = RestoreCategories.Browsers,
+                Label = BrowserRestoreService.CommonDataLabel(browser.Name),
+                SourcePath = browser.FullPath,
+                RelativeSourcePath = browser.RelativePath,
+                DestinationPath = PathUtil.Normalize(BrowserRestoreService.ChromiumUserData(target, browser.Kind)),
+                Policy = ConflictPolicy.Replace,
+                Excluded = excluded,
+                SafetyFolder = Path.Combine(safetyRoot, "Browsers", browser.Kind.ToString(), "User Data"),
+                CleanDatabaseCompanions = true,
+                DestinationNote = "dossier User Data de ce PC",
+                Notes =
+                [
+                    "Données communes du navigateur à côté des profils (dossier User Data, caches exclus à la sauvegarde).",
+                    "Les profils sont restaurés séparément, chacun dans le profil choisi.",
+                    "Non restaurés : " + string.Join(", ", BrowserRestoreService.ChromiumUserDataNotRestored) + " de ce PC conservés (clé de chiffrement Windows, installation du navigateur).",
+                ],
+            });
+        }
+
         // 5. Wi-Fi
         var wifi = backup.Wifi.Where(w => s.SelectedWifi.Contains(w.RelativePath))
             .Select(w => new WifiRestoreItem(w, s.WifiState?.ExistingProfiles.Contains(w.Name) == true)).ToList();

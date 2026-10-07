@@ -15,7 +15,7 @@
                 <StackPanel>
                     <TextBlock Text="5. Navigateurs" Style="{StaticResource PageTitle}" />
                     <TextBlock Style="{StaticResource PageSubtitle}"
-                               Text="Copie des profils Chrome, Edge et Firefox de la session (favoris, historique, extensions, paramètres). Les caches sont exclus." />
+                               Text="Copie du dossier « User Data » complet de Chrome et Edge (profils sélectionnés et données communes du navigateur) et des profils Firefox de la session. Les caches sont exclus." />
                 </StackPanel>
             </DockPanel>
 

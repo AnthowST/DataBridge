@@ -13,7 +13,8 @@ public sealed record BrowserTargetOption(string Key, string Label, string Detail
 /// <summary>
 /// Restore strategy for browser profiles. It is not a blind copy of the old "User Data" folder:
 /// <list type="bullet">
-/// <item>Chrome / Edge: only the profile folder is restored, into a profile chosen on this PC. The "Local State" file of
+/// <item>Chrome / Edge: each profile folder is restored into a profile chosen on this PC, and the rest of the saved
+/// "User Data" folder (browser-wide data next to the profiles) into this PC's "User Data". The "Local State" file of
 /// this PC is never replaced: it holds the encryption key protected by Windows (DPAPI) for this account. Files that can
 /// only be read with the old PC's key (saved passwords, cookies, autofill tokens and cards, sync and push
 /// registrations) are not restored: copying them would bring unreadable data and could break sign-in.</item>
@@ -38,7 +39,40 @@ public static class BrowserRestoreService
     /// <summary>Firefox lock files of the old session.</summary>
     public static readonly IReadOnlyList<string> FirefoxNotRestored = ["parent.lock", ".parentlock", "lock"];
 
+    /// <summary>
+    /// Files at the root of "User Data" that belong to this PC's installation: never restored with the common data
+    /// (Local State holds this account's DPAPI key and the profile list of this PC).
+    /// </summary>
+    public static readonly IReadOnlyList<string> ChromiumUserDataNotRestored = ["Local State", "lockfile", "Last Version", "Last Browser"];
+
     public static IReadOnlyList<string> NotRestored(BrowserKind kind) => kind == BrowserKind.Firefox ? FirefoxNotRestored : ChromiumNotRestored;
+
+    public static string CommonDataLabel(string browserName) => $"{browserName} — données communes (User Data)";
+
+    /// <summary>
+    /// Exclusions of the "common data" item of a saved Chrome / Edge "User Data" folder: the files of this installation
+    /// and every profile folder (each profile is restored on its own, into the profile chosen for it). Null when the
+    /// backup holds nothing else (1.x backups: Local State and the profiles only) or no "User Data" folder.
+    /// </summary>
+    public static IReadOnlyList<string>? CommonDataExclusions(BackupBrowser browser)
+    {
+        if (browser.Kind == BrowserKind.Firefox) return null;
+        if (!Path.GetFileName(browser.FullPath).Equals("User Data", StringComparison.OrdinalIgnoreCase)) return null;
+        if (FastDirectory.GetEntry(browser.FullPath) is not { IsDirectory: true, IsLink: false }) return null;
+        if (FastDirectory.TryList(browser.FullPath, out _) is not { } entries) return null;
+
+        var excluded = new List<string>(ChromiumUserDataNotRestored);
+        var hasOther = false;
+        foreach (var e in entries)
+        {
+            var isProfile = e.IsDirectory && (e.Name.Equals("Default", StringComparison.OrdinalIgnoreCase)
+                || e.Name.StartsWith("Profile ", StringComparison.OrdinalIgnoreCase)
+                || browser.Profiles.Any(p => PathUtil.AreSame(p.FullPath, e.FullPath)));
+            if (isProfile) excluded.Add(e.Name);
+            else if (!ChromiumUserDataNotRestored.Contains(e.Name, StringComparer.OrdinalIgnoreCase)) hasOther = true;
+        }
+        return hasOther ? excluded : null;
+    }
 
     /// <summary>Plain-language description for the summary, the log and the report.</summary>
     public static IReadOnlyList<string> Description(BrowserKind kind) => kind == BrowserKind.Firefox
@@ -51,6 +85,7 @@ public static class BrowserRestoreService
         :
         [
             "Restauré : favoris, historique, extensions, préférences, onglets, données de sites (dossier du profil, caches exclus).",
+            "Restauré aussi : le reste du dossier « User Data » (données communes du navigateur, à côté des profils).",
             "Non restauré : « Local State » de ce PC conservé (clé de chiffrement Windows de ce compte).",
             "Non restauré : mots de passe (Login Data), cookies, jetons et cartes (Web Data), données de synchronisation (Sync Data, GCM Store).",
             "Le navigateur peut redemander la connexion au compte et réinitialiser certains paramètres protégés.",

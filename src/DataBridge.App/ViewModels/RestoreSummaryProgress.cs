@@ -170,6 +170,7 @@ public sealed class RestoreSummaryViewModel : RestorePageViewModel
             if (selected.Any(c => c.Target is null)) { apps.Add(new SummaryLine(MarkKind.Warn, name, "profil de destination à choisir")); continue; }
             var running = BrowserProcessService.IsRunning(kind);
             var detail = string.Join(", ", selected.Select(c => $"{c.Profile.DisplayName} → {c.Target!.Label.Replace("Profil actuel : ", "")}"));
+            if (plan.Items.Any(i => i.Label == BrowserRestoreService.CommonDataLabel(choices[0].Browser.Name))) detail += " · données communes User Data";
             apps.Add(new SummaryLine(running ? MarkKind.Warn : MarkKind.Ok, name, running ? detail + " · ouvert" : detail));
         }
         groups.Add(new SummaryGroup("Applications", apps));

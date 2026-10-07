@@ -2,6 +2,7 @@ using System.Text.Json;
 using DataBridge.Core;
 using DataBridge.Core.Copy;
 using DataBridge.Core.Detection;
+using DataBridge.Core.IO;
 using DataBridge.Core.Profile;
 using DataBridge.Core.Restore;
 using DataBridge.Core.Selection;
@@ -43,7 +44,7 @@ public class RestoreTests
     }
 
     /// <summary>A DataBridge 2.0 backup produced by the real backup engine (with its manifest).</summary>
-    internal static string RealBackup(TempTree t, Action<TempTree>? fill = null, string sourceUser = "Old")
+    internal static string RealBackup(TempTree t, Action<TempTree>? fill = null, string sourceUser = "Old", Action<BackupSelection>? select = null)
     {
         var sourceProfile = t.Dir($@"Users\{sourceUser}");
         var docs = t.Dir($@"Users\{sourceUser}\Documents");
@@ -54,6 +55,7 @@ public class RestoreTests
         var selection = new BackupSelection { Profile = Profile(sourceProfile, sourceUser) with { MachineName = "PC-ANCIEN" } };
         selection.PersonalRoots.Add(new PersonalRoot(Folder(PersonalFolderKind.Documents, docs)));
         selection.PersonalRoots.Add(new PersonalRoot(Folder(PersonalFolderKind.Desktop, t.Dir($@"Users\{sourceUser}\Desktop"))));
+        select?.Invoke(selection);
         var plan = selection.BuildPlan(t.Dir("Backups"), "DataBridge_PC-ANCIEN_Old_2026-10-06_17-11");
         var result = new CopyEngine(plan, new CopyProgress()).RunAsync(CancellationToken.None).GetAwaiter().GetResult();
         Assert.Equal(CopyOutcome.Completed, result.Outcome);
@@ -578,6 +580,56 @@ public class RestoreTests
         Assert.False(File.Exists(Path.Combine(dest, "History-journal")));
         Assert.True(File.Exists(Path.Combine(safety, "History-journal")));
         Assert.Equal(1, result.Count(IssueKind.Restored));
+    }
+
+    [Fact]
+    public void Complete_chrome_user_data_is_backed_up_and_restored_beside_the_profiles()
+    {
+        using var t = new TempTree();
+        var source = t.Dir(@"Users\Old\AppData\Local\Google\Chrome\User Data");
+        File.WriteAllText(Path.Combine(source, "Local State"),
+            """{"profile":{"info_cache":{"Default":{"name":"Perso"},"Profile 1":{"name":"Travail"}}},"os_crypt":{"encrypted_key":"OLD"}}""");
+        t.File(Path.Combine(source, @"Default\Preferences"), 40);
+        t.File(Path.Combine(source, @"Default\Bookmarks"), 300);
+        t.File(Path.Combine(source, @"Default\Cache\Cache_Data\data_0"), 900);
+        t.File(Path.Combine(source, @"Profile 1\Preferences"), 41);
+        t.File(Path.Combine(source, @"WidevineCdm\4.10\manifest.json"), 12);
+        t.File(Path.Combine(source, "First Run"), 1);
+        t.File(Path.Combine(source, @"GrShaderCache\data_1"), 800);
+        var chrome = BrowserDetector.DetectChromium(BrowserKind.Chrome, "Google Chrome", "chrome", source);
+
+        // Backup: the whole User Data folder, minus the caches and the unchecked profile.
+        var root = RealBackup(t, select: s =>
+        {
+            var browser = new BrowserSelection(chrome);
+            browser.SelectedProfiles.Remove(chrome.Profiles.Single(p => p.FolderName == "Profile 1").FullPath);
+            s.Browsers.Add(browser);
+        });
+        var saved = Path.Combine(root, @"Browsers\Chrome\User Data");
+        Assert.True(File.Exists(Path.Combine(saved, "Local State")));
+        Assert.Equal(300, new FileInfo(Path.Combine(saved, @"Default\Bookmarks")).Length);
+        Assert.True(File.Exists(Path.Combine(saved, @"WidevineCdm\4.10\manifest.json")));
+        Assert.True(File.Exists(Path.Combine(saved, "First Run")));
+        Assert.False(Directory.Exists(Path.Combine(saved, "Profile 1")));
+        Assert.False(Directory.Exists(Path.Combine(saved, @"Default\Cache")));
+        Assert.False(Directory.Exists(Path.Combine(saved, "GrShaderCache")));
+
+        // Restore: the profile into the chosen profile, the rest of User Data beside it, this PC's Local State kept.
+        var target = Target(t);
+        var userData = t.Dir(@"Users\New\AppData\Local\Google\Chrome\User Data");
+        t.File(@"Users\New\AppData\Local\Google\Chrome\User Data\Default\Preferences", 5);
+        File.WriteAllText(Path.Combine(userData, "Local State"), "NEW");
+        target = target.WithFreshBrowsers();
+        var plan = RestorePlanner.BuildPlan(RestoreSelection.Create(BackupReader.Open(root).Content!, target));
+        Assert.Contains(plan.Items, i => i.Label == BrowserRestoreService.CommonDataLabel("Google Chrome") && i.DestinationPath == PathUtil.Normalize(userData));
+        var result = Run(plan);
+
+        Assert.Equal(0, result.Count(IssueKind.WriteError));
+        Assert.Equal(12, new FileInfo(Path.Combine(userData, @"WidevineCdm\4.10\manifest.json")).Length);
+        Assert.True(File.Exists(Path.Combine(userData, "First Run")));
+        Assert.Equal(300, new FileInfo(Path.Combine(userData, @"Default\Bookmarks")).Length);
+        Assert.Equal("NEW", File.ReadAllText(Path.Combine(userData, "Local State")));
+        Assert.False(Directory.Exists(Path.Combine(userData, "Profile 1")));
     }
 
     [Fact]

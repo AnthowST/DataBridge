@@ -324,9 +324,22 @@ public sealed class BackupSelection
     {
         var info = browser.Info;
         var folderName = info.Kind switch { BrowserKind.Chrome => "Chrome", BrowserKind.Edge => "Edge", _ => "Firefox" };
-        var tree = new SelectionTree(info.DataRoot, rootIncluded: false);
-        foreach (var file in info.RootFiles)
-            tree.AddRule(Path.Combine(info.DataRoot, file), true);
+        // Chrome / Edge: the complete "User Data" folder (profiles and the browser-wide data next to them), minus the caches
+        // and the profiles the technician unchecked. Firefox: profiles.ini / installs.ini and the selected profiles.
+        var wholeUserData = info.Kind != BrowserKind.Firefox;
+        var tree = new SelectionTree(info.DataRoot, rootIncluded: wholeUserData);
+        if (wholeUserData)
+        {
+            foreach (var cache in info.ExcludedSubfolders)
+                tree.AddRule(Path.Combine(info.DataRoot, cache), false);
+            foreach (var profile in info.Profiles.Where(p => !browser.SelectedProfiles.Contains(p.FullPath) && PathUtil.IsStrictlyUnder(p.FullPath, info.DataRoot)))
+                tree.AddRule(profile.FullPath, false);
+        }
+        else
+        {
+            foreach (var file in info.RootFiles)
+                tree.AddRule(Path.Combine(info.DataRoot, file), true);
+        }
 
         var external = new List<BrowserProfileInfo>();
         var copiedProfiles = new List<string>();
@@ -349,6 +362,7 @@ public sealed class BackupSelection
             "Caches exclus : " + string.Join(", ", info.ExcludedSubfolders),
             "Mots de passe : non extraits (protégés par Windows / le navigateur, à exporter manuellement).",
         };
+        if (wholeUserData) notes.Insert(0, "Dossier User Data complet (profils et données communes du navigateur).");
 
         if (copiedProfiles.Count > 0)
         {

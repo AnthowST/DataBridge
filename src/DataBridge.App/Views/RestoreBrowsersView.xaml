@@ -15,7 +15,7 @@
                 <StackPanel>
                     <TextBlock Text="{Binding PageTitle}" Style="{StaticResource PageTitle}" />
                     <TextBlock Style="{StaticResource PageSubtitle}"
-                               Text="Chaque profil sauvegardé est restauré dans un profil de ce PC que vous choisissez : rien n'est écrasé sans association explicite. Les fichiers remplacés sont d'abord copiés en sécurité." />
+                               Text="Chaque profil sauvegardé est restauré dans un profil de ce PC que vous choisissez : rien n'est écrasé sans association explicite. Le reste du dossier « User Data » de Chrome et Edge est restauré avec eux (« Local State » de ce PC conservé). Les fichiers remplacés sont d'abord copiés en sécurité." />
                 </StackPanel>
             </DockPanel>
 

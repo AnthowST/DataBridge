@@ -185,7 +185,9 @@ Les compteurs des cartes navigateurs ont une largeur fixe et leurs deux lignes s
   (fichiers absents / existants / remplacés / identiques, espace par volume) et le moteur utilisent les mêmes règles.
 - **Conflits** : une règle globale (par défaut « remplacer uniquement si la sauvegarde est plus récente »), comparaison
   par nom, taille et date, aucune fenêtre par fichier. Un fichier remplacé est écrit à côté puis permuté.
-- **Navigateurs** : profil sauvegardé → profil de ce PC choisi ; « Local State » du PC conservé ; mots de passe, cookies,
+- **Navigateurs** : la sauvegarde copie le dossier « User Data » complet de Chrome / Edge (caches exclus) ; à la
+  restauration, profil sauvegardé → profil de ce PC choisi, reste de « User Data » → « User Data » de ce PC ;
+  « Local State » du PC conservé ; mots de passe, cookies,
   jetons, données de synchronisation non restaurés (non portables) ; copie de sécurité des fichiers remplacés dans
   `%LOCALAPPDATA%\DataBridge\RestoreSafety` ; Firefox : profil existant ou nouveau profil inscrit dans profiles.ini.
 - **Wi-Fi** : import par l'API WLAN avec les droits de la session ; profil existant conservé ou remplacé ; clé jamais
