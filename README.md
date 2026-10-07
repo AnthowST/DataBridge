@@ -5,7 +5,7 @@
 DataBridge est un utilitaire Windows permettant de sauvegarder et restaurer les principales données d'un profil
 utilisateur.
 
-Current version: **2.0.0**
+Current version: **2.0.1**
 
 | Fonction | Statut |
 |---|---|

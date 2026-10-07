@@ -17,7 +17,9 @@
     <Description>Copiez, sauvegardez et restaurez vos données</Description>
     <Company>DataBridge</Company>
     <Copyright>DataBridge</Copyright>
-    <Version>2.0.0</Version>
+    <Version>2.0.1</Version>
+    <!-- ProductVersion stays "2.0.1" (no "+<commit>" suffix added by the SDK in a git repository). -->
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <NoWarn>$(NoWarn);CA1416</NoWarn>
   </PropertyGroup>
 
