@@ -62,7 +62,7 @@
                         </Border>
                         <StackPanel VerticalAlignment="Center">
                             <TextBlock Text="Boîte aux lettres (PST)" FontWeight="SemiBold" FontSize="14" />
-                            <TextBlock Text="Outlook classique doit être ouvert. Rien n'est lu dans Outlook avant « Analyser Outlook »." Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
+                            <TextBlock Text="Les boîtes du profil Outlook sont listées automatiquement (Outlook classique doit être ouvert). Choisissez celle à exporter : DataBridge retrouve son contenu et le copie dans un nouveau PST." Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
                         </StackPanel>
                     </DockPanel>
 
@@ -70,6 +70,13 @@
                         <DockPanel>
                             <TextBlock Style="{StaticResource Icon}" Text="&#xE946;" Foreground="{StaticResource Warning}" Margin="0,0,10,0" VerticalAlignment="Top" />
                             <TextBlock Text="{Binding MailboxMessage}" TextWrapping="Wrap" AutomationProperties.AutomationId="MailboxMessage" />
+                        </DockPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource InfoBanner}" Margin="0,10,0,0" Visibility="{Binding StoresNote, Converter={StaticResource NotEmpty}}">
+                        <DockPanel>
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE946;" Foreground="{StaticResource Accent}" Margin="0,1,10,0" VerticalAlignment="Top" />
+                            <TextBlock Text="{Binding StoresNote}" TextWrapping="Wrap" Foreground="{StaticResource TextMuted}" AutomationProperties.AutomationId="StoresNote" />
                         </DockPanel>
                     </Border>
 

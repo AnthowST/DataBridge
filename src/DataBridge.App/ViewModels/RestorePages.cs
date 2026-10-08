@@ -376,14 +376,41 @@ public sealed class RestoreOutlookViewModel : RestorePageViewModel
         Restore.SelectionChanged();
     }
 
+    private bool _listedOnce;
+    private string _storesNote = "";
+
+    /// <summary>Data files of the Outlook profile that could not be opened (missing PST...): ignored, never removed from Outlook.</summary>
+    public string StoresNote { get => _storesNote; private set => Set(ref _storesNote, value); }
+
+    /// <summary>The mailboxes of this PC are listed automatically when the page is shown (the target is still chosen explicitly).</summary>
+    public override void OnActivated()
+    {
+        if (!HasMailbox || _listedOnce || IsBusy || TestNoOutlook) return;
+        if (!OutlookSession.IsOutlookRunning())
+        {
+            MailboxMessage = "Outlook classique n'est pas ouvert : ouvrez-le, puis cliquez sur « Lister les boîtes Outlook ».";
+            return;
+        }
+        ListStores();
+    }
+
+    private static bool TestNoOutlook =>
+#if DEBUG
+        Environment.GetEnvironmentVariable("DATABRIDGE_TEST_NO_OUTLOOK") == "1";
+#else
+        false;
+#endif
+
     /// <summary>Lists the mailboxes of the Outlook profile of this PC (Outlook must be open). The target is never preselected.</summary>
     private async void ListStores()
     {
+        _listedOnce = true;
         IsBusy = true;
         MailboxMessage = "Connexion à Outlook…";
         try
         {
-            var stores = await OutlookSession.Shared.RunAsync(s => s.ListStores());
+            var (stores, warnings) = await OutlookSession.Shared.RunAsync(s => (s.ListStores(), s.StoreWarnings.ToList()));
+            StoresNote = string.Join("\n", warnings);
             _stores = stores;
             StoreOptions = stores.Select(s => new OutlookStoreOption(s, () => _stores.FirstOrDefault(x => x.StoreId == Mailbox?.TargetStoreId), Choose)).ToList();
             MailboxMessage = stores.Count == 0 ? "Aucune boîte trouvée dans le profil Outlook de ce PC." : "";
@@ -433,6 +460,8 @@ public sealed class RestoreOutlookViewModel : RestorePageViewModel
         _stores = [];
         StoreOptions = [];
         MailboxMessage = "";
+        StoresNote = "";
+        _listedOnce = false;
         foreach (var n in new[]
                  {
                      nameof(HasSignatures), nameof(IsPresent), nameof(Names), nameof(CountText), nameof(SourceText), nameof(OriginalText), nameof(DestinationText),

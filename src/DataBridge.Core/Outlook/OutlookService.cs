@@ -96,16 +96,22 @@ public sealed class OutlookService
 
     // ================================================================== liste des boîtes
 
+    /// <summary>DataBridge : fichiers de données du profil ignorés par le dernier <see cref="ListStores"/> (introuvables, illisibles).</summary>
+    public List<string> StoreWarnings { get; } = new();
+
     public List<StoreEntry> ListStores()
     {
         Connect();
+        StoreWarnings.Clear();
 
         var accountsByStore = new Dictionary<string, List<string>>();
         dynamic accounts = _ns.Accounts;
         int na = accounts.Count;
         for (int i = 1; i <= na; i++)
         {
-            dynamic acc = accounts.Item(i);
+            dynamic acc;
+            try { acc = accounts.Item(i); }
+            catch { continue; } // compte inaccessible : ignoré
             try
             {
                 string type = AccountTypeName(Int(() => acc.AccountType, -1));
@@ -128,7 +134,16 @@ public sealed class OutlookService
         int n = stores.Count;
         for (int i = 1; i <= n; i++)
         {
-            dynamic s = stores.Item(i);
+            // DataBridge : un fichier de données du profil peut être introuvable (PST déplacé ou supprimé, disque débranché).
+            // Outlook refuse alors d'ouvrir CE fichier : il est ignoré et signalé, les autres boîtes restent listées.
+            // Le profil Outlook n'est jamais modifié (le fichier n'est pas retiré d'Outlook).
+            dynamic s;
+            try { s = stores.Item(i); }
+            catch (Exception ex)
+            {
+                StoreWarnings.Add(UnavailableStore(ex));
+                continue;
+            }
             try
             {
                 int xt = Int(() => s.ExchangeStoreType, olNotExchange);
@@ -142,6 +157,11 @@ public sealed class OutlookService
                     FilePath = Str(() => s.FilePath),
                     IsDefault = id == defaultId,
                 };
+                if (e.FilePath != "" && !File.Exists(e.FilePath))
+                {
+                    StoreWarnings.Add($"Fichier de données introuvable, ignoré : {e.FilePath} ({e.DisplayName}).");
+                    continue;
+                }
                 string kind = accountsByStore.TryGetValue(id, out var accs)
                     ? "compte " + string.Join(", ", accs)
                     : xt == olNotExchange ? "fichier de données" : "boîte Exchange / Microsoft 365";
@@ -150,7 +170,7 @@ public sealed class OutlookService
                                 + (e.IsDefault ? "   [boîte par défaut du profil]" : "");
                 list.Add(e);
             }
-            catch { }
+            catch (Exception ex) { StoreWarnings.Add(UnavailableStore(ex)); }
             finally { Release(s); }
         }
         Release(stores);
@@ -1110,7 +1130,9 @@ public sealed class OutlookService
             int n = stores.Count;
             for (int i = 1; i <= n; i++)
             {
-                dynamic s = stores.Item(i);
+                dynamic s;
+                try { s = stores.Item(i); }
+                catch { continue; } // fichier de données introuvable : ignoré
                 if (Str(() => s.StoreID) == storeId) return s;
                 Release(s);
             }
@@ -1128,7 +1150,9 @@ public sealed class OutlookService
             int n = stores.Count;
             for (int i = 1; i <= n; i++)
             {
-                dynamic s = stores.Item(i);
+                dynamic s;
+                try { s = stores.Item(i); }
+                catch { continue; } // fichier de données introuvable : ignoré
                 string fp = Str(() => s.FilePath);
                 bool match = false;
                 try { match = fp != "" && string.Equals(Path.GetFullPath(fp), full, StringComparison.OrdinalIgnoreCase); } catch { }
@@ -1252,6 +1276,14 @@ public sealed class OutlookService
     {
         s ??= "";
         return s.IndexOfAny(new[] { ';', '"', '\r', '\n' }) >= 0 ? "\"" + s.Replace("\"", "\"\"") + "\"" : s;
+    }
+
+    /// <summary>Message d'un fichier de données qu'Outlook n'arrive pas à ouvrir (« Impossible de trouver le fichier X.pst »).</summary>
+    static string UnavailableStore(Exception ex)
+    {
+        string message = (ex.InnerException ?? ex).Message.Trim();
+        return "Fichier de données du profil Outlook inaccessible, ignoré : " + message
+               + " Il n'est pas retiré d'Outlook : vous pouvez le fermer vous-même (clic droit > Fermer) s'il n'existe plus.";
     }
 
     static string AccountTypeName(int t) => t switch

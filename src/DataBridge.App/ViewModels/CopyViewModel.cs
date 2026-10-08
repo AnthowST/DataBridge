@@ -277,7 +277,8 @@ public sealed class CopyViewModel : PageViewModel
             var failed = r.Wifi.Count - r.WifiExported;
             if (failed > 0) wifi.Add(new(MarkKind.Error, Format.Plural(failed, "profil non exporté", "profils non exportés")));
             if (r.WifiKeysProtected > 0) wifi.Add(new(MarkKind.Warn, Format.Plural(r.WifiKeysProtected, "clé protégée par Windows", "clés protégées par Windows")));
-            if (r.WifiKeysIncluded > 0) wifi.Add(new(MarkKind.Ok, Format.Plural(r.WifiKeysIncluded, "clé incluse", "clés incluses") + " dans l'export"));
+            if (r.WifiKeysIncluded > 0) wifi.Add(new(MarkKind.Ok, Format.Plural(r.WifiKeysIncluded, "clé incluse", "clés incluses") + " dans l'export" +
+                (r.WifiKeysViaAdmin > 0 ? $" (dont {r.WifiKeysViaAdmin} avec les droits administrateur)" : "")));
             if (r.WifiWithoutKey > 0) wifi.Add(new(MarkKind.Ok, Format.Plural(r.WifiWithoutKey, "réseau sans clé partagée", "réseaux sans clé partagée")));
         }
         else

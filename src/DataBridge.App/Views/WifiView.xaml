@@ -19,7 +19,7 @@
                 <StackPanel>
                     <TextBlock Text="6. Réseaux Wi-Fi enregistrés" Style="{StaticResource PageTitle}" />
                     <TextBlock Style="{StaticResource PageSubtitle}"
-                               Text="Export des profils WLAN avec l'API Windows, uniquement avec les droits de la session : aucune élévation n'est demandée. Les profils sont enregistrés dans Network\WiFi." />
+                               Text="Export des profils WLAN avec l'API Windows et les droits de la session. Les profils sont enregistrés dans Network\WiFi." />
                 </StackPanel>
             </DockPanel>
 
@@ -27,7 +27,33 @@
                 <DockPanel>
                     <TextBlock Style="{StaticResource Icon}" Text="&#xE72E;" Foreground="{StaticResource Accent}" VerticalAlignment="Top" Margin="0,1,10,0" />
                     <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TextMuted}"
-                               Text="Si Windows autorise la lecture de la clé pour la session, elle est incluse dans le fichier XML exporté (jamais affichée ni écrite dans le journal). Sinon le profil est exporté sans clé : rien n'est forcé. Conservez le dossier de sauvegarde en lieu sûr." />
+                               Text="Si Windows autorise la lecture de la clé pour la session, elle est incluse dans le fichier XML exporté (jamais affichée ni écrite dans le journal). Sinon, vous pouvez la récupérer avec les droits administrateur (une seule demande UAC) ; à défaut, le profil est exporté sans clé. Conservez le dossier de sauvegarde en lieu sûr." />
+                </DockPanel>
+            </Border>
+
+            <!-- 2.1.1: keys refused to the session, recovered on request by ONE elevated worker that only reads these Wi-Fi profiles. -->
+            <Border Style="{StaticResource Banner}" Margin="0,14,0,0" Visibility="{Binding ShowRecoverPanel, Converter={StaticResource Visible}}"
+                    AutomationProperties.AutomationId="WifiRecoverBanner">
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Style="{StaticResource SecondaryButton}" VerticalAlignment="Top" Margin="12,0,0,0"
+                            Command="{Binding RecoverKeysCommand}" AutomationProperties.AutomationId="RecoverWifiKeysButton"
+                            AutomationProperties.Name="Récupérer les clés (administrateur)"
+                            Visibility="{Binding HasBlockedKeys, Converter={StaticResource Visible}}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE7EF;" FontSize="12" Margin="0,0,6,0" />
+                            <TextBlock Text="Récupérer les clés (administrateur)" />
+                        </StackPanel>
+                    </Button>
+                    <TextBlock Style="{StaticResource Icon}" Text="&#xE7EF;" Foreground="{StaticResource Warning}" VerticalAlignment="Top" Margin="0,1,10,0" />
+                    <StackPanel>
+                        <TextBlock Text="{Binding RecoverTitle}" FontWeight="SemiBold" AutomationProperties.AutomationId="WifiRecoverTitle" />
+                        <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TextMuted}" Margin="0,2,0,0"
+                                   Visibility="{Binding HasBlockedKeys, Converter={StaticResource Visible}}"
+                                   Text="Windows refuse ces clés avec les droits de la session (par exemple avec un compte utilisateur standard). Une seule demande UAC, avec les identifiants d'un administrateur du PC : seuls ces profils Wi-Fi sont lus avec ces droits, le reste de DataBridge continue sans élévation." />
+                        <TextBlock Text="{Binding RecoveryMessage}" TextWrapping="Wrap" Margin="0,6,0,0" FontWeight="SemiBold"
+                                   Visibility="{Binding RecoveryMessage, Converter={StaticResource NotEmpty}}"
+                                   AutomationProperties.AutomationId="WifiRecoveryMessage" />
+                    </StackPanel>
                 </DockPanel>
             </Border>
 

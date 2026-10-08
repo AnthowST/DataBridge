@@ -61,6 +61,11 @@ public sealed class BackupSelection
     public bool IncludeWallpaper { get; set; } = true;
     public List<WifiProfileInfo> WifiProfiles { get; } = [];
     public HashSet<string> SelectedWifi { get; } = new(StringComparer.Ordinal);
+    /// <summary>
+    /// 2.1.1: profiles whose key was recovered through the elevated worker (profile name → XML, key in clear).
+    /// Kept in memory only, written to Network\WiFi by the backup; never displayed or logged.
+    /// </summary>
+    public Dictionary<string, string> RecoveredWifiXml { get; } = new(StringComparer.Ordinal);
     /// <summary>Outlook mailbox to export (2.1): chosen on the Outlook page, null when none was chosen.</summary>
     public Outlook.OutlookBackupJob? OutlookMailbox { get; set; }
     /// <summary>Printers of this PC (2.1), read on the Imprimantes page; null until then.</summary>
@@ -293,7 +298,9 @@ public sealed class BackupSelection
             DestinationBase = destinationBase,
             BackupFolderName = backupFolderName,
             Jobs = jobs,
-            Wifi = wifi.Count > 0 ? new WifiJob(wifi, @"Network\WiFi") : null,
+            Wifi = wifi.Count > 0
+                ? new WifiJob(wifi, @"Network\WiFi", wifi.Where(p => RecoveredWifiXml.ContainsKey(p.Name)).ToDictionary(p => p.Name, p => RecoveredWifiXml[p.Name]))
+                : null,
             Printers = printerIds.Count > 0 ? new PrinterTransfer.PrinterBackupJob(PrinterInventory!, printerIds) : null,
             Outlook = mailbox,
             SkipCloudOnly = SkipCloudOnly,

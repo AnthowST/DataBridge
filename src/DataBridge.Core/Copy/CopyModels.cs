@@ -183,6 +183,7 @@ public sealed class CopyResult
 
     public int WifiExported => Wifi.Count(w => w.Exported);
     public int WifiKeysIncluded => Wifi.Count(w => w.KeyIncluded);
+    public int WifiKeysViaAdmin => Wifi.Count(w => w.KeyIncluded && w.KeyViaAdmin);
     public int WifiKeysProtected => Wifi.Count(w => w.Exported && w.KeyStatus is WifiKeyStatus.NotAccessible or WifiKeyStatus.Unknown);
     public int WifiWithoutKey => Wifi.Count(w => w.Exported && w.KeyStatus == WifiKeyStatus.NoKey);
 }

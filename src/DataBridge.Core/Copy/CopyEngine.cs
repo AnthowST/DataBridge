@@ -305,7 +305,7 @@ public sealed class CopyEngine
         {
             if (StopRequested) break;
             _progress.CurrentFile = "Profil Wi-Fi : " + profile.Name;
-            var r = WifiService.Export(profile, folder);
+            var r = WifiService.Export(profile, folder, wifi.RecoveredXml?.GetValueOrDefault(profile.Name));
             _result.Wifi.Add(r);
             _progress.WifiDone++;
         }

@@ -103,7 +103,7 @@
                         <StackPanel>
                             <TextBlock Text="BOÎTE DE DESTINATION" Style="{StaticResource Label}" />
                             <TextBlock Text="{Binding TargetText}" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}" Margin="0,4,0,0" AutomationProperties.AutomationId="OutlookTarget" />
-                            <TextBlock Text="Outlook classique doit être ouvert sur ce PC, avec la boîte de destination configurée. Le choix est toujours explicite."
+                            <TextBlock Text="Les boîtes du profil Outlook de ce PC sont listées automatiquement (Outlook classique ouvert, boîte de destination configurée). Choisissez celle qui reçoit la sauvegarde : le choix est toujours explicite."
                                        Style="{StaticResource Small}" TextWrapping="Wrap" />
                         </StackPanel>
                     </DockPanel>
@@ -112,6 +112,13 @@
                         <DockPanel>
                             <TextBlock Style="{StaticResource Icon}" Text="&#xE946;" Foreground="{StaticResource Warning}" Margin="0,0,10,0" VerticalAlignment="Top" />
                             <TextBlock Text="{Binding MailboxMessage}" TextWrapping="Wrap" AutomationProperties.AutomationId="RestoreMailboxMessage" />
+                        </DockPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource InfoBanner}" Margin="0,10,0,0" Visibility="{Binding StoresNote, Converter={StaticResource NotEmpty}}">
+                        <DockPanel>
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE946;" Foreground="{StaticResource Accent}" Margin="0,1,10,0" VerticalAlignment="Top" />
+                            <TextBlock Text="{Binding StoresNote}" TextWrapping="Wrap" Foreground="{StaticResource TextMuted}" AutomationProperties.AutomationId="RestoreStoresNote" />
                         </DockPanel>
                     </Border>
 

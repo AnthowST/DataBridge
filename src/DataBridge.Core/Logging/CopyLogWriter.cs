@@ -135,7 +135,8 @@ public sealed class CopyLogWriter
             Line("Copiés alors qu'ouverts", Format.Count(result.CopiedWhileOpenCount));
         Line("Contrôle", ControlText(result));
         if (plan.Wifi != null)
-            Line("Profils Wi-Fi exportés", $"{result.WifiExported} / {plan.Wifi.Profiles.Count} (clés incluses : {result.WifiKeysIncluded}, " +
+            Line("Profils Wi-Fi exportés", $"{result.WifiExported} / {plan.Wifi.Profiles.Count} (clés incluses : {result.WifiKeysIncluded}" +
+                                         (result.WifiKeysViaAdmin > 0 ? $" dont {result.WifiKeysViaAdmin} avec les droits administrateur" : "") + ", " +
                                          $"clés protégées par Windows : {result.WifiKeysProtected}, sans clé partagée : {result.WifiWithoutKey})");
         if (result.Outcome == CopyOutcome.Cancelled)
             log.WriteLine("Les éléments déjà copiés ont été conservés.");
@@ -242,6 +243,7 @@ public sealed class CopyLogWriter
             }
             var key = w.KeyStatus switch
             {
+                WifiKeyStatus.Available when w.KeyViaAdmin => "clé incluse (récupérée avec les droits administrateur)",
                 WifiKeyStatus.Available => "clé incluse",
                 WifiKeyStatus.NoKey => "pas de clé partagée (réseau ouvert / entreprise)",
                 WifiKeyStatus.NotAccessible => "clé NON incluse (protégée par Windows, non accessible avec les droits de la session)",

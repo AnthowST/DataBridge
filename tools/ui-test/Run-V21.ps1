@@ -40,6 +40,8 @@ foreach ($k in $kf.Keys) { Set-Item "Env:DATABRIDGE_TEST_$k" $kf[$k] }
 Set-Item Env:DATABRIDGE_TEST_ROAMING "$Root\AppData\Roaming"
 Set-Item Env:DATABRIDGE_TEST_LOCAL "$Root\AppData\Local"
 Set-Item Env:DATABRIDGE_TEST_NO_WALLPAPER_APPLY '1'
+# 2.1.1: the Outlook pages list the mailboxes automatically; this Debug-only switch keeps the scenario away from Outlook.
+Set-Item Env:DATABRIDGE_TEST_NO_OUTLOOK '1'
 
 Get-Process DataBridge -ErrorAction SilentlyContinue | Stop-Process -Force
 $win = Start-App (Resolve-Path $Exe).Path

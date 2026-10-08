@@ -5,7 +5,7 @@
 DataBridge est un utilitaire Windows permettant de sauvegarder et restaurer les principales données d'un profil
 utilisateur.
 
-Current version: **2.1.0**
+Current version: **2.1.1**
 
 | Fonction | Statut |
 |---|---|
@@ -21,21 +21,23 @@ Current version: **2.1.0**
 - Boîte aux lettres Outlook (mails, calendrier, contacts, autocomplétion) exportée dans un PST et restaurée dans la boîte choisie
 - Imprimantes (file, port TCP/IP, pilote, réglages) — format `.prnbak` de PrintBridge
 - Profils Chrome, Edge et Firefox
-- Profils Wi-Fi
+- Profils Wi-Fi avec leur clé (droits de la session ; clés refusées récupérables avec une invite UAC à la demande)
 - Fond d'écran
 - Restauration sélective
 - Gestion des conflits
 - Sauvegardes DataBridge 2.0 avec manifest (`databridge-manifest.json`)
 - Compatibilité avec les sauvegardes DataBridge 1.x
-- Fonctionnement sans élévation administrateur (seule exception : la restauration des imprimantes, une invite UAC si nécessaire)
+- Fonctionnement sans élévation administrateur (exceptions : la restauration des imprimantes et, à la demande, les clés
+  Wi-Fi refusées à la session ; une invite UAC si nécessaire)
 
 ## Système
 
 - Windows 10 / Windows 11
 - Exécutable autonome `DataBridge.exe` (aucun .NET à installer), téléchargeable depuis les
   [Releases](https://github.com/AnthowST/DataBridge/releases)
-- Fonctionne avec les droits de la session utilisateur (manifeste `asInvoker`). Seule exception : restaurer une imprimante
-  qui demande un pilote, un port TCP/IP ou une file d'impression déclenche **une** invite UAC (voir « Imprimantes »)
+- Fonctionne avec les droits de la session utilisateur (manifeste `asInvoker`). Exceptions : restaurer une imprimante
+  qui demande un pilote, un port TCP/IP ou une file d'impression déclenche **une** invite UAC (voir « Imprimantes ») ;
+  récupérer les clés Wi-Fi que Windows refuse à la session aussi, uniquement sur demande (voir « Clés Wi-Fi »)
 - Outlook : Outlook classique ouvert (le nouvel Outlook n'est pas pris en charge)
 
 Au lancement, DataBridge propose **Sauvegarder ce profil** ou **Restaurer un profil** (restauration d'une sauvegarde
@@ -51,7 +53,8 @@ pas leur restauration.
 ## Outlook et imprimantes (2.1)
 
 - **Boîte aux lettres Outlook** : moteur repris de *Sauvegarde Outlook* (COM tardif sur un thread STA dédié). Étape
-  « 4. Outlook » : « Analyser Outlook » (rien n'est lu avant ce clic), choix de la boîte, quatre catégories (mails,
+  « 4. Outlook » : les boîtes du profil sont listées automatiquement (boîte par défaut présélectionnée ; un fichier de
+  données introuvable, PST déplacé ou supprimé, est ignoré et signalé sans toucher au profil), quatre catégories (mails,
   calendrier, contacts, autocomplétion) dont **tout** le contenu est copié. Sauvegarde : la boîte n'est que lue, chaque
   élément passe par un `.msg` temporaire vers un nouveau PST (`Outlook\Boite`), retiré du profil ensuite ; autocomplétion
   copiée à part (`.bin` + `.csv`). Restauration : copie de travail du PST, boîte de destination toujours choisie
@@ -64,6 +67,17 @@ pas leur restauration.
   défaut) restent dans DataBridge ; les opérations machine (pilote, port, file) passent par **une** instance élevée
   `DataBridge.exe --printer-worker` (invite UAC, liste fermée d'opérations, canal nommé à ACL restreinte, PID vérifié),
   uniquement si une imprimante cochée en a besoin. Aucune page de test n'est imprimée.
+
+## Clés Wi-Fi (2.1.1)
+
+La sauvegarde demande chaque clé Wi-Fi en clair à Windows avec les droits de la session ; quand Windows l'accepte (cas
+habituel d'un compte administrateur du PC), elle est incluse dans le XML exporté sans aucune invite. Quand Windows la
+refuse (par exemple avec un compte utilisateur standard), l'étape « 6. Réseaux Wi-Fi » propose « Récupérer les clés
+(administrateur) » : **une** invite UAC (identifiants d'un administrateur du PC) démarre
+`DataBridge.exe --wifi-key-worker`, qui lit uniquement les profils Wi-Fi demandés, renvoie leur XML par un canal nommé à
+ACL restreinte (PID vérifié) puis s'arrête ; il n'écrit aucun fichier. Le XML reste en mémoire jusqu'à la sauvegarde
+(`Network\WiFi`) ; la clé n'est jamais affichée ni écrite dans le journal. Refusée, l'invite ne change rien : les
+profils sont exportés sans clé. Un profil propre à un autre compte Windows peut rester protégé.
 
 ## Stack
 
@@ -110,6 +124,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools/ui-test/Run-V20.ps1 -P
 
 Contrôles du Release (droits, UAC, lecture des sauvegardes 2.0 et 1.x) : `Check-V20-Release.ps1`. Import Wi-Fi réel avec un
 profil jetable puis suppression : `Test-WifiImport.ps1`. Fond d'écran appliqué puis remis : `Test-WallpaperRestore.ps1`.
+Clés Wi-Fi récupérées (2.1.1) : `Run-V211-WifiKeys.ps1` (build Debug ; `DATABRIDGE_TEST_WIFI_KEYS_BLOCKED=1` affiche les
+clés comme protégées, `DATABRIDGE_TEST_WIFI_NO_UAC=1` démarre le worker sans invite UAC ; dossier de test supprimé à la fin).
 
 Stabilité du layout (1.3.2) : `Run-V132-Layout.ps1` coche / décoche chaque case (Signatures, Navigateurs, Wi-Fi, Fond
 d'écran) et compare avant / après les positions UI Automation et les pixels de la page (`-Monitor100` : passe à 100 %).
@@ -119,7 +135,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools/ui-test/Run-V132-Layou
 ```
 
 Outlook et imprimantes (2.1) : `Run-V21.ps1` (build Debug) fait une sauvegarde de test avec export des imprimantes
-(lecture seule), puis ouvre la restauration jusqu'au résumé **sans la lancer** ; Outlook n'est jamais interrogé.
+(lecture seule), puis ouvre la restauration jusqu'au résumé **sans la lancer** ; Outlook n'est jamais interrogé
+(`DATABRIDGE_TEST_NO_OUTLOOK=1`, build Debug uniquement).
 
 ## Structure
 
@@ -248,4 +265,4 @@ pas seulement sur le nom du dossier.
 
 Transfert PC→PC direct, restauration à distance, compte / cloud DataBridge, assistant de migration, OST et profils Outlook,
 comptes Microsoft 365, export de mots de passe, applications, licences, registre, compression, chiffrement, cloud,
-serveur, installateur, mise à jour automatique, mode administrateur (hors restauration des imprimantes), page de test.
+serveur, installateur, mise à jour automatique, mode administrateur (hors restauration des imprimantes et clés Wi-Fi refusées), page de test.

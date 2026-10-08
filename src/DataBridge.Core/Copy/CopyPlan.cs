@@ -38,7 +38,9 @@ public sealed class CopyJob
     public IReadOnlyList<string> Notes { get; init; } = [];
 }
 
-public sealed record WifiJob(IReadOnlyList<WifiProfileInfo> Profiles, string DestinationRelative);
+/// <param name="RecoveredXml">2.1.1: profile name → XML read by the elevated worker (key in clear, never logged).</param>
+public sealed record WifiJob(IReadOnlyList<WifiProfileInfo> Profiles, string DestinationRelative,
+    IReadOnlyDictionary<string, string>? RecoveredXml = null);
 
 public sealed class CopyPlan
 {

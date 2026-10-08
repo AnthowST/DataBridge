@@ -21,6 +21,18 @@ public partial class App : Application
             return;
         }
 
+        // 2.1.1 — elevated Wi-Fi key worker: "DataBridge.exe --wifi-key-worker <pipe> <pid>", started from the Wi-Fi page
+        // through ONE UAC prompt when the technician asks for the keys Windows refuses to the session. It only reads the
+        // requested Wi-Fi profiles, answers once over the pipe and exits.
+        if (e.Args.Length >= 3 && e.Args[0] == Core.Detection.WifiKeyElevation.Argument && int.TryParse(e.Args[2], out var wifiParentPid))
+        {
+            int code;
+            try { code = Core.Detection.WifiKeyElevation.RunWorker(e.Args[1], wifiParentPid); }
+            catch { code = 1; }
+            Shutdown(code);
+            return;
+        }
+
         base.OnStartup(e);
         DispatcherUnhandledException += OnUnhandled;
 

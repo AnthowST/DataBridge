@@ -115,14 +115,42 @@ public sealed class OutlookViewModel : PageViewModel
         ApplyMailbox();
     }
 
-    /// <summary>Lists the mailboxes of the Outlook profile (Outlook must be open; nothing is read before this click).</summary>
+    private bool _analyzedOnce;
+    private string _storesNote = "";
+
+    /// <summary>Data files of the Outlook profile that could not be opened (missing PST...): ignored, never removed from Outlook.</summary>
+    public string StoresNote { get => _storesNote; private set => Set(ref _storesNote, value); }
+
+    /// <summary>The mailboxes are listed automatically when the page is shown, if classic Outlook is open.</summary>
+    public override void OnActivated()
+    {
+        if (_analyzedOnce || IsBusy || TestNoOutlook) return;
+        if (!OutlookSession.IsOutlookRunning())
+        {
+            MailboxMessage = "Outlook classique n'est pas ouvert : ouvrez-le, puis cliquez sur « Analyser Outlook ».";
+            return;
+        }
+        Analyze();
+    }
+
+    /// <summary>Debug builds only: DATABRIDGE_TEST_NO_OUTLOOK=1 keeps the UI scenarios away from the real Outlook.</summary>
+    private static bool TestNoOutlook =>
+#if DEBUG
+        Environment.GetEnvironmentVariable("DATABRIDGE_TEST_NO_OUTLOOK") == "1";
+#else
+        false;
+#endif
+
+    /// <summary>Lists the mailboxes of the Outlook profile (Outlook must be open) and preselects the default one.</summary>
     private async void Analyze()
     {
+        _analyzedOnce = true;
         IsBusy = true;
         MailboxMessage = "Connexion à Outlook…";
         try
         {
-            var stores = await OutlookSession.Shared.RunAsync(s => s.ListStores());
+            var (stores, warnings) = await OutlookSession.Shared.RunAsync(s => (s.ListStores(), s.StoreWarnings.ToList()));
+            StoresNote = string.Join("\n", warnings);
             Stores = stores;
             MailboxMessage = stores.Count == 0 ? "Aucune boîte trouvée dans le profil Outlook." : "";
             if (_selectedStore is null || stores.All(s => s.StoreId != _selectedStore.StoreId))
@@ -423,10 +451,13 @@ public sealed class WifiViewModel : PageViewModel
     private bool _loadedOnce;
     private bool _serviceAvailable;
     private string? _message;
+    private bool _isRecovering;
+    private string? _recoveryMessage;
 
     public WifiViewModel(MainViewModel main) : base(main, 6, "Réseaux Wi-Fi", "", "Nav_Wifi")
     {
-        RefreshCommand = new RelayCommand(Load);
+        RefreshCommand = new RelayCommand(Load, () => !IsRecovering);
+        RecoverKeysCommand = new RelayCommand(RecoverKeys, () => !IsRecovering && KeyBlockedCount > 0);
         SelectAllCommand = new RelayCommand(() => SetAll(true));
         SelectNoneCommand = new RelayCommand(() => SetAll(false));
         Status = "Détection…";
@@ -437,10 +468,28 @@ public sealed class WifiViewModel : PageViewModel
     public ICommand RefreshCommand { get; }
     public ICommand SelectAllCommand { get; }
     public ICommand SelectNoneCommand { get; }
+    public ICommand RecoverKeysCommand { get; }
     public bool IsLoaded { get => _isLoaded; private set => Set(ref _isLoaded, value); }
     public bool ServiceAvailable { get => _serviceAvailable; private set => Set(ref _serviceAvailable, value); }
     public string? Message { get => _message; private set => Set(ref _message, value); }
     public int KeyBlockedCount => Items.Count(i => i.KeyBlocked);
+
+    // 2.1.1 — keys Windows refuses to the session: recovered on request through ONE UAC prompt (WifiKeyElevation).
+    public bool IsRecovering
+    {
+        get => _isRecovering;
+        private set { if (Set(ref _isRecovering, value)) CommandManager.InvalidateRequerySuggested(); }
+    }
+    public string? RecoveryMessage
+    {
+        get => _recoveryMessage;
+        private set { Set(ref _recoveryMessage, value); OnPropertyChanged(nameof(ShowRecoverPanel)); }
+    }
+    public bool HasBlockedKeys => KeyBlockedCount > 0;
+    public bool ShowRecoverPanel => HasBlockedKeys || RecoveryMessage != null;
+    public string RecoverTitle => KeyBlockedCount > 0
+        ? Format.Plural(KeyBlockedCount, "clé protégée par Windows", "clés protégées par Windows")
+        : "Clés Wi-Fi récupérées";
 
     public void Load()
     {
@@ -450,24 +499,93 @@ public sealed class WifiViewModel : PageViewModel
         {
             var detection = t.IsCompletedSuccessfully ? t.Result : new WifiDetection(false, "Détection Wi-Fi impossible : " + t.Exception?.InnerException?.Message, []);
             var previous = Selection.SelectedWifi.ToHashSet();
-            Selection.WifiProfiles.Clear();
-            Selection.WifiProfiles.AddRange(detection.Profiles);
+            var profiles = detection.Profiles.Select(Adjust).ToList();
             Selection.SelectedWifi.Clear();
             var first = !_loadedOnce;
             _loadedOnce = true;
-            foreach (var p in detection.Profiles)
+            foreach (var p in profiles)
                 if (first || previous.Contains(p.Name)) Selection.SelectedWifi.Add(p.Name);
-            Items.Clear();
-            foreach (var p in detection.Profiles) Items.Add(new WifiItemViewModel(p, this));
+            ShowProfiles(profiles);
             ServiceAvailable = detection.ServiceAvailable;
             Message = detection.Message;
             IsLoaded = true;
-            OnPropertyChanged(nameof(KeyBlockedCount));
             UpdateSidebar();
             Main.Home.Refresh();
             Main.RequestRecalc();
         }, TaskScheduler.FromCurrentSynchronizationContext());
     }
+
+    private void ShowProfiles(List<WifiProfileInfo> profiles)
+    {
+        Selection.WifiProfiles.Clear();
+        Selection.WifiProfiles.AddRange(profiles);
+        Items.Clear();
+        foreach (var p in profiles) Items.Add(new WifiItemViewModel(p, this));
+        OnPropertyChanged(nameof(KeyBlockedCount));
+        OnPropertyChanged(nameof(HasBlockedKeys));
+        OnPropertyChanged(nameof(ShowRecoverPanel));
+        OnPropertyChanged(nameof(RecoverTitle));
+        CommandManager.InvalidateRequerySuggested();
+    }
+
+    /// <summary>A key recovered as administrator stays recovered after "Actualiser" (same XML kept in memory).</summary>
+    private WifiProfileInfo Adjust(WifiProfileInfo p)
+    {
+        if (Selection.RecoveredWifiXml.ContainsKey(p.Name)) return p with { KeyStatus = WifiKeyStatus.Available, KeyViaAdmin = true };
+        if (TestKeysBlocked && p.KeyStatus == WifiKeyStatus.Available) return p with { KeyStatus = WifiKeyStatus.NotAccessible };
+        return p;
+    }
+
+    private void RecoverKeys()
+    {
+        var blocked = Items.Where(i => i.KeyBlocked).Select(i => i.Info).ToList();
+        if (blocked.Count == 0 || IsRecovering) return;
+        IsRecovering = true;
+        RecoveryMessage = "Demande des droits administrateur : répondez à la fenêtre Windows (UAC)…";
+        var exe = Environment.ProcessPath!;
+        var elevate = !TestNoUac;
+        Task.Run(() => WifiKeyElevation.Recover(exe, blocked, elevate)).ContinueWith(t =>
+        {
+            IsRecovering = false;
+            if (t.IsCompletedSuccessfully)
+            {
+                var r = t.Result;
+                foreach (var (name, xml) in r.Recovered) Selection.RecoveredWifiXml[name] = xml;
+                ShowProfiles(Selection.WifiProfiles.Select(Adjust).ToList());
+                var text = r.Recovered.Count > 0
+                    ? Format.Plural(r.Recovered.Count, "clé récupérée", "clés récupérées") + $" avec les droits administrateur ({r.Account})."
+                    : "Aucune clé n'a pu être récupérée.";
+                if (r.StillProtected.Count > 0)
+                    text += $" Toujours protégée(s) : {string.Join(", ", r.StillProtected)} (profil propre à un autre compte ou refusé par Windows) : exporté(s) sans clé.";
+                RecoveryMessage = text;
+            }
+            else if (t.Exception?.InnerException is OperationCanceledException)
+                RecoveryMessage = "Demande administrateur refusée : ces profils seront exportés sans leur clé. Vous pouvez réessayer.";
+            else
+                RecoveryMessage = "Récupération impossible : " + t.Exception?.InnerException?.Message;
+            UpdateSidebar();
+            Main.Home.Refresh();
+            Main.RequestRecalc();
+        }, TaskScheduler.FromCurrentSynchronizationContext());
+    }
+
+    /// <summary>
+    /// Debug builds only: DATABRIDGE_TEST_WIFI_KEYS_BLOCKED=1 shows the readable keys as protected (to exercise the recovery
+    /// on a PC where the session may read them); DATABRIDGE_TEST_WIFI_NO_UAC=1 starts the key worker without UAC.
+    /// </summary>
+    private static bool TestKeysBlocked =>
+#if DEBUG
+        Environment.GetEnvironmentVariable("DATABRIDGE_TEST_WIFI_KEYS_BLOCKED") == "1";
+#else
+        false;
+#endif
+
+    private static bool TestNoUac =>
+#if DEBUG
+        Environment.GetEnvironmentVariable("DATABRIDGE_TEST_WIFI_NO_UAC") == "1";
+#else
+        false;
+#endif
 
     private void SetAll(bool value)
     {

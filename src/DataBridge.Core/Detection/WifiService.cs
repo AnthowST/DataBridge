@@ -15,12 +15,14 @@ public sealed record WifiProfileInfo(
     bool IsPerUser,
     bool IsGroupPolicy,
     string Authentication,
-    WifiKeyStatus KeyStatus)
+    WifiKeyStatus KeyStatus,
+    bool KeyViaAdmin = false)
 {
     public string ScopeLabel => IsGroupPolicy ? "Stratégie de groupe" : IsPerUser ? "Utilisateur actuel" : "Tous les utilisateurs";
 
     public string KeyLabel => KeyStatus switch
     {
+        WifiKeyStatus.Available when KeyViaAdmin => "Clé récupérée avec les droits administrateur",
         WifiKeyStatus.Available => "Clé exportable",
         // Windows returns all-user keys in clear only to administrators; per-user keys stay protected by the user's DPAPI.
         WifiKeyStatus.NotAccessible when IsPerUser => "Clé protégée par Windows : non accessible avec les droits de la session",
@@ -32,7 +34,8 @@ public sealed record WifiProfileInfo(
 
 public sealed record WifiDetection(bool ServiceAvailable, string? Message, IReadOnlyList<WifiProfileInfo> Profiles);
 
-public sealed record WifiExportResult(string ProfileName, bool Exported, string? FileName, WifiKeyStatus KeyStatus, string? Error)
+public sealed record WifiExportResult(string ProfileName, bool Exported, string? FileName, WifiKeyStatus KeyStatus, string? Error,
+    bool KeyViaAdmin = false)
 {
     public bool KeyIncluded => Exported && KeyStatus == WifiKeyStatus.Available;
 }
@@ -40,8 +43,9 @@ public sealed record WifiExportResult(string ProfileName, bool Exported, string?
 /// <summary>
 /// Wi-Fi profiles through the native WLAN API (wlanapi.dll) rather than parsing localized "netsh" output.
 /// The key is requested with WLAN_PROFILE_GET_PLAINTEXT_KEY: Windows decides whether the current, non-elevated
-/// user may read it. When it refuses, the profile is still exported (key protected / absent) and nothing is forced.
-/// The key is never displayed, logged or kept: only its availability is reported.
+/// user may read it. When it refuses, the profile is still exported (key protected / absent): the technician may
+/// recover those keys through ONE UAC prompt (<see cref="WifiKeyElevation"/>), never automatically.
+/// The key is never displayed or logged: only its availability is reported.
 /// </summary>
 public static class WifiService
 {
@@ -109,9 +113,13 @@ public static class WifiService
         }
     }
 
-    /// <summary>Writes the profile XML as returned by Windows into <paramref name="folder"/> (Wi-Fi-&lt;name&gt;.xml).</summary>
-    public static WifiExportResult Export(WifiProfileInfo profile, string folder)
+    /// <summary>
+    /// Writes the profile XML as returned by Windows into <paramref name="folder"/> (Wi-Fi-&lt;name&gt;.xml).
+    /// <paramref name="recoveredXml"/>: the XML already read by the elevated worker (key recovered as administrator).
+    /// </summary>
+    public static WifiExportResult Export(WifiProfileInfo profile, string folder, string? recoveredXml = null)
     {
+        if (recoveredXml != null) return Write(profile, folder, recoveredXml, viaAdmin: true);
         if (NativeMethods.WlanOpenHandle(NativeMethods.WLAN_CLIENT_VERSION_2, IntPtr.Zero, out _, out var client) != 0)
             return new WifiExportResult(profile.Name, false, null, WifiKeyStatus.Unknown, "API WLAN indisponible.");
         try
@@ -122,7 +130,22 @@ public static class WifiService
                 var reason = error == ERROR_ACCESS_DENIED ? "Accès refusé par Windows." : $"Erreur WLAN {error}.";
                 return new WifiExportResult(profile.Name, false, null, WifiKeyStatus.Unknown, reason);
             }
+            return Write(profile, folder, xml, viaAdmin: false);
+        }
+        catch (Exception ex)
+        {
+            return new WifiExportResult(profile.Name, false, null, WifiKeyStatus.Unknown, ex.Message);
+        }
+        finally
+        {
+            NativeMethods.WlanCloseHandle(client, IntPtr.Zero);
+        }
+    }
 
+    private static WifiExportResult Write(WifiProfileInfo profile, string folder, string xml, bool viaAdmin)
+    {
+        try
+        {
             var (_, keyStatus) = Analyze(xml);
             var fileName = "Wi-Fi-" + PathUtil.SanitizeSegment(profile.Name, "profil") + ".xml";
             var target = Path.Combine(folder, fileName);
@@ -133,15 +156,12 @@ public static class WifiService
             // Same encoding as the XML declaration says (WLAN profiles normally carry no encoding => UTF-8).
             var encoding = xml.Contains("encoding=\"UTF-16\"", StringComparison.OrdinalIgnoreCase) ? Encoding.Unicode : new UTF8Encoding(false);
             File.WriteAllText(target, xml, encoding);
-            return new WifiExportResult(profile.Name, true, Path.GetFileName(target), keyStatus, null);
+            return new WifiExportResult(profile.Name, true, Path.GetFileName(target), keyStatus, null,
+                viaAdmin && keyStatus == WifiKeyStatus.Available);
         }
         catch (Exception ex)
         {
             return new WifiExportResult(profile.Name, false, null, WifiKeyStatus.Unknown, ex.Message);
-        }
-        finally
-        {
-            NativeMethods.WlanCloseHandle(client, IntPtr.Zero);
         }
     }
 
@@ -193,7 +213,7 @@ public static class WifiService
         _ => auth,
     };
 
-    private static string? GetProfileXml(IntPtr client, Guid iface, string name, out uint error)
+    internal static string? GetProfileXml(IntPtr client, Guid iface, string name, out uint error)
     {
         uint flags = NativeMethods.WLAN_PROFILE_GET_PLAINTEXT_KEY;
         error = NativeMethods.WlanGetProfile(client, ref iface, name, IntPtr.Zero, out var xmlPtr, ref flags, out _);

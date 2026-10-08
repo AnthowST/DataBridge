@@ -191,11 +191,19 @@ public sealed class SummaryViewModel : PageViewModel
 
         // Network
         var wifiCount = s.SelectedWifi.Count;
+        string WifiDetail()
+        {
+            var selected = Main.Wifi.Items.Where(i => i.IsSelected).ToList();
+            var parts = new List<string>();
+            if (selected.Count(i => i.KeyBlocked) is var blocked and > 0) parts.Add($"{blocked} clé(s) non accessible(s)");
+            if (selected.Count(i => i.Info.KeyViaAdmin) is var admin and > 0) parts.Add($"{admin} clé(s) récupérée(s) en administrateur");
+            return string.Join(" · ", parts);
+        }
         groups.Add(new SummaryGroup("Réseau",
         [
             wifiCount > 0
                 ? new SummaryLine(MarkKind.Ok, Format.Plural(wifiCount, "profil Wi-Fi", "profils Wi-Fi"),
-                    Main.Wifi.Items.Count(i => i.IsSelected && i.KeyBlocked) is var blocked and > 0 ? $"{blocked} clé(s) non accessible(s)" : "")
+                    WifiDetail())
                 : new SummaryLine(MarkKind.Off, "Profils Wi-Fi", Main.Wifi.Items.Count == 0 ? "aucun profil" : "aucun sélectionné"),
         ]));
 
