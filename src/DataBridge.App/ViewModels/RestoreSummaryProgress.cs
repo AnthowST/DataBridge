@@ -26,7 +26,7 @@ public sealed class RestoreSummaryViewModel : RestorePageViewModel
     private IReadOnlyList<string> _issues = [];
     private IReadOnlyList<string> _warnings = [];
 
-    public RestoreSummaryViewModel(RestoreViewModel restore) : base(restore, 8, "Résumé", "", "R_Nav_Summary")
+    public RestoreSummaryViewModel(RestoreViewModel restore) : base(restore, 9, "Résumé", "", "R_Nav_Summary")
     {
         StartCommand = new RelayCommand(() => Restore.StartRestore(), () => CanStart);
         Status = "Vérification avant restauration";
@@ -173,6 +173,15 @@ public sealed class RestoreSummaryViewModel : RestorePageViewModel
             if (plan.Items.Any(i => i.Label == BrowserRestoreService.CommonDataLabel(choices[0].Browser.Name))) detail += " · données communes User Data";
             apps.Add(new SummaryLine(running ? MarkKind.Warn : MarkKind.Ok, name, running ? detail + " · ouvert" : detail));
         }
+        apps.Add(s.Mailbox switch
+        {
+            null => new SummaryLine(MarkKind.Off, "Boîte Outlook", "absente de la sauvegarde"),
+            { Include: false } => new SummaryLine(MarkKind.Off, "Boîte Outlook", "non incluse"),
+            { TargetStoreId: null } => new SummaryLine(MarkKind.Warn, "Boîte Outlook", "boîte de destination à choisir"),
+            var m => new SummaryLine(Core.Outlook.OutlookSession.IsOutlookRunning() ? MarkKind.Ok : MarkKind.Warn, "Boîte Outlook",
+                $"{m.Source.MailboxName} → {m.TargetName} · {Core.Outlook.OutlookCategoryText.Describe(m.Selected & m.Source.Available)}"
+                + (Core.Outlook.OutlookSession.IsOutlookRunning() ? "" : " · Outlook fermé")),
+        });
         groups.Add(new SummaryGroup("Applications", apps));
 
         var wifiCount = s.Backup.Wifi.Count(w => s.SelectedWifi.Contains(w.RelativePath));
@@ -188,6 +197,16 @@ public sealed class RestoreSummaryViewModel : RestorePageViewModel
             s.Backup.Wallpaper is null ? new SummaryLine(MarkKind.Off, "Fond d'écran", "absent de la sauvegarde")
             : s.IncludeWallpaper ? new SummaryLine(MarkKind.Ok, "Fond d'écran", Format.Size(s.Backup.Wallpaper.Size))
             : new SummaryLine(MarkKind.Off, "Fond d'écran", "non inclus"),
+        ]));
+        var printers = plan.PrintersToRestore;
+        groups.Add(new SummaryGroup("Imprimantes",
+        [
+            s.Backup.Printers is null ? new SummaryLine(MarkKind.Off, "Imprimantes", "absentes de la sauvegarde")
+            : s.Printers is null ? new SummaryLine(MarkKind.Off, "Imprimantes", "analyse en cours…")
+            : s.Printers.Error != null ? new SummaryLine(MarkKind.Warn, "Imprimantes", "sauvegarde inutilisable")
+            : printers.Count == 0 ? new SummaryLine(MarkKind.Off, "Imprimantes", "aucune sélectionnée")
+            : new SummaryLine(plan.PrintersNeedAdmin ? MarkKind.Warn : MarkKind.Ok, Format.Plural(printers.Count, "imprimante", "imprimantes"),
+                string.Join(", ", printers.Select(p => p.TargetName)) + (plan.PrintersNeedAdmin ? " · droits administrateur (une invite UAC)" : "")),
         ]));
         Groups = groups;
 
@@ -243,7 +262,7 @@ public sealed class RestoreProgressViewModel : RestorePageViewModel
     private double _speed;
     private TimeSpan _lastSpeedSample;
 
-    public RestoreProgressViewModel(RestoreViewModel restore) : base(restore, 9, "Restauration", "", "R_Nav_Progress")
+    public RestoreProgressViewModel(RestoreViewModel restore) : base(restore, 10, "Restauration", "", "R_Nav_Progress")
     {
         CancelCommand = new RelayCommand(RequestCancel, () => IsRunning && !IsCancelling);
         OpenLogCommand = new RelayCommand(() => Open(_result?.LogPath), () => _result?.LogPath != null);
@@ -291,6 +310,8 @@ public sealed class RestoreProgressViewModel : RestorePageViewModel
     public IReadOnlyList<ResultLine> BrowserLines { get; private set; } = [];
     public IReadOnlyList<ResultLine> WifiLines { get; private set; } = [];
     public IReadOnlyList<ResultLine> WindowsLines { get; private set; } = [];
+    public IReadOnlyList<ResultLine> OutlookLines { get; private set; } = [];
+    public IReadOnlyList<ResultLine> PrinterLines { get; private set; } = [];
     public string KpiFiles { get; private set; } = "";
     public string KpiBytes { get; private set; } = "";
     public string KpiReplaced { get; private set; } = "";
@@ -350,6 +371,18 @@ public sealed class RestoreProgressViewModel : RestorePageViewModel
             BytesText = "";
             DetailText = "";
             Percent = 0;
+        }
+        else if (p.ExtraPhase)
+        {
+            // Printers / Outlook mailbox, after the files: items of the engine, not bytes.
+            Category = string.IsNullOrEmpty(p.Item) ? p.Category : $"{p.Category} — {p.Item}";
+            CurrentFile = IsCancelling ? "Arrêt en cours… " + p.CurrentFile : p.CurrentFile;
+            FilesText = p.ExtraTotal > 0 ? $"{Format.Count(p.ExtraDone)} / {Format.Count(p.ExtraTotal)} éléments" : "En cours…";
+            BytesText = $"Fichiers : {Format.Count(p.WrittenFiles)} restaurés";
+            DetailText = "";
+            Percent = p.ExtraTotal > 0 ? Math.Min(100, p.ExtraDone * 100.0 / p.ExtraTotal) : 100;
+            SpeedText = "";
+            RemainingText = "";
         }
         else
         {
@@ -449,6 +482,8 @@ public sealed class RestoreProgressViewModel : RestorePageViewModel
         WindowsLines = r.Wallpaper is { } wp
             ? [new(wp.Applied || (wp.Copied && !wp.ApplyRequested) ? MarkKind.Ok : wp.Copied ? MarkKind.Warn : MarkKind.Error, wp.Applied ? "Fond d'écran appliqué" : wp.Message)]
             : [new(MarkKind.Off, "Fond d'écran non restauré")];
+        OutlookLines = ExtraResultLines.Outlook(r.Outlook, restore: true);
+        PrinterLines = ExtraResultLines.PrintersRestore(r.Printers);
 
         KpiFiles = Format.Count(r.WrittenFiles);
         KpiBytes = Format.Size(r.WrittenBytes);
@@ -466,7 +501,8 @@ public sealed class RestoreProgressViewModel : RestorePageViewModel
         foreach (var name in new[]
                  {
                      nameof(IsFinished), nameof(ResultTitle), nameof(ResultSubtitle), nameof(ResultKind), nameof(ResultWarn), nameof(ResultFailed),
-                     nameof(ResultLines), nameof(BrowserLines), nameof(WifiLines), nameof(WindowsLines), nameof(KpiFiles), nameof(KpiBytes),
+                     nameof(ResultLines), nameof(BrowserLines), nameof(WifiLines), nameof(WindowsLines), nameof(OutlookLines), nameof(PrinterLines),
+                     nameof(KpiFiles), nameof(KpiBytes),
                      nameof(KpiReplaced), nameof(KpiKept), nameof(KpiErrors), nameof(HasErrors), nameof(DurationText), nameof(ControlText),
                      nameof(SafetyText), nameof(LogPath),
                  })

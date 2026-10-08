@@ -25,7 +25,7 @@ public sealed class SummaryViewModel : PageViewModel
     private IReadOnlyList<SummaryGroup> _groups = [];
     private IReadOnlyList<string> _warnings = [];
 
-    public SummaryViewModel(MainViewModel main) : base(main, 8, "Résumé", "", "Nav_Summary")
+    public SummaryViewModel(MainViewModel main) : base(main, 9, "Résumé", "", "Nav_Summary")
     {
         StartCommand = new RelayCommand(() => Main.StartCopy(), () => CanStart);
         BackToSelectionCommand = new RelayCommand(() => Main.GoTo(Main.Personal));
@@ -92,7 +92,8 @@ public sealed class SummaryViewModel : PageViewModel
     }
 
     public bool HasDestination => Main.Destination.IsValid;
-    public bool NothingSelected => Main.Totals is { } t && t.PerJob.Count == 0 && Main.Selection.SelectedWifi.Count == 0;
+    public bool NothingSelected => Main.Totals is { } t && t.PerJob.Count == 0 && Main.Selection.SelectedWifi.Count == 0
+                                   && Main.Selection.SelectedPrinters.Count == 0 && Main.Selection.OutlookMailbox is null;
     public bool InsufficientSpace => IsComplete && FreeBytes is { } f && PlannedBytes + SafetyMargin > f;
     public string SpaceSelectedText => $"Données à copier : {Format.Size(PlannedBytes)}";
     public string SpaceFreeText => $"Espace disponible : {FreeText}";
@@ -174,6 +175,10 @@ public sealed class SummaryViewModel : PageViewModel
             s.Signatures is { Exists: true } && s.IncludeSignatures
                 ? new SummaryLine(MarkKind.Ok, "Signatures Outlook", $"{s.Signatures.Names.Count} · {SizeOf(JobTotals(j => j.Category == Categories.Outlook))}")
                 : new SummaryLine(MarkKind.Off, "Signatures Outlook", s.Signatures?.Exists == true ? "non incluses" : "aucune"),
+            s.OutlookMailbox is { } mailbox
+                ? new SummaryLine(Core.Outlook.OutlookSession.IsOutlookRunning() ? MarkKind.Ok : MarkKind.Warn, "Boîte Outlook",
+                    $"{mailbox.StoreName} · {Core.Outlook.OutlookCategoryText.Describe(mailbox.Categories)}" + (Core.Outlook.OutlookSession.IsOutlookRunning() ? "" : " · Outlook fermé"))
+                : new SummaryLine(MarkKind.Off, "Boîte Outlook", "non incluse"),
         };
         foreach (var card in Main.Browsers.Cards)
         {
@@ -202,6 +207,15 @@ public sealed class SummaryViewModel : PageViewModel
                 : new SummaryLine(MarkKind.Off, "Fond d'écran", s.Wallpaper?.Exists == true ? "non inclus" : "non détecté"),
         ]));
 
+        // Printers (2.1)
+        var printers = Main.Printers.Items.Where(i => i.IsSelected).ToList();
+        groups.Add(new SummaryGroup("Imprimantes",
+        [
+            printers.Count > 0
+                ? new SummaryLine(MarkKind.Ok, Format.Plural(printers.Count, "imprimante", "imprimantes"), string.Join(", ", printers.Select(p => p.Name)))
+                : new SummaryLine(MarkKind.Off, "Imprimantes", !Main.Printers.IsLoaded ? "détection…" : Main.Printers.Items.Count == 0 ? "aucune" : "aucune sélectionnée"),
+        ]));
+
         Groups = groups;
 
         var warnings = new List<string>();
@@ -210,6 +224,12 @@ public sealed class SummaryViewModel : PageViewModel
         warnings.AddRange(Main.Destination.Warnings);
         if (HasCloudFiles && !SkipCloudOnly)
             warnings.Add($"Attention : {Format.Size(Sum!.Value.CloudBytes)} vont être téléchargés depuis le cloud pendant la copie.");
+        if (s.OutlookMailbox is { } mb)
+        {
+            warnings.Add(Core.Outlook.OutlookSession.IsOutlookRunning()
+                ? $"La boîte Outlook « {mb.StoreName} » est exportée après les fichiers, dans un nouveau PST (Outlook doit rester ouvert). Sa taille n'est pas comprise dans l'estimation."
+                : "Outlook classique est fermé : ouvrez-le avant de lancer la copie, sinon la boîte aux lettres ne sera pas sauvegardée.");
+        }
         Warnings = warnings;
 
         foreach (var name in new[]

@@ -122,6 +122,8 @@ public sealed class RestoreEngine
 
             if (!StopRequested) RunWifi();
             if (!StopRequested && _plan.Wallpaper is { } wallpaper) RunWallpaper(wallpaper);
+            if (!StopRequested && _plan.PrintersToRestore.Count > 0) RunPrinters(_plan.Printers!);
+            if (!StopRequested && _plan.Outlook is { } outlook) RunOutlook(outlook);
         }
         catch (OperationCanceledException)
         {
@@ -459,6 +461,56 @@ public sealed class RestoreEngine
         if (r.Copied && Directory.Exists(Path.Combine(_plan.SafetyRoot, "Wallpaper"))) _result.SafetyUsed = true;
         Issue(r.Copied ? IssueKind.Restored : IssueKind.WriteError, r.Copied ? (r.Applied ? IssueSeverity.Info : IssueSeverity.Ignored) : IssueSeverity.Error,
             "Fond d'écran", r.Message);
+    }
+
+    // ------------------------------------------------------------------ printers, Outlook (2.1)
+
+    /// <summary>
+    /// Printers with the PrintBridge engine: per-user operations in this process, machine operations through one elevated
+    /// DataBridge instance (a single UAC prompt, only because a selected printer needs it). Never a test page.
+    /// </summary>
+    private void RunPrinters(DataBridge.Printers.Restore.RestorePlan printers)
+    {
+        _progress.Category = "Imprimantes";
+        _progress.Item = Format.Plural(_plan.PrintersToRestore.Count, "imprimante", "imprimantes");
+        _progress.ExtraPhase = true;
+        _progress.ExtraDone = 0;
+        _progress.ExtraTotal = 0;
+        var r = PrinterTransfer.PrinterTransferService.Restore(printers, s => _progress.CurrentFile = s, _ct);
+        _result.Printers = r;
+        if (r.Error != null) Issue(IssueKind.Other, IssueSeverity.Error, "Imprimantes", r.Error);
+        foreach (var p in r.Report?.Printers ?? [])
+        {
+            var severity = p.Outcome switch
+            {
+                DataBridge.Printers.Reporting.PrinterOutcome.Failed => IssueSeverity.Error,
+                DataBridge.Printers.Reporting.PrinterOutcome.Restored or DataBridge.Printers.Reporting.PrinterOutcome.KeptExisting => IssueSeverity.Info,
+                _ => IssueSeverity.Ignored,
+            };
+            Issue(severity == IssueSeverity.Error ? IssueKind.Other : IssueKind.Restored, severity, "Imprimante « " + p.TargetName + " »", p.OutcomeText);
+        }
+        foreach (var g in r.Report?.General.Where(g => g.Status == DataBridge.Printers.Reporting.StepStatus.Error) ?? [])
+            Issue(IssueKind.Other, IssueSeverity.Error, "Imprimantes", g.Title + (g.Detail is { Length: > 0 } d ? " : " + d : ""));
+    }
+
+    /// <summary>Outlook mailbox: working copy of the PST, additions only into the chosen mailbox, duplicates skipped.</summary>
+    private void RunOutlook(Outlook.OutlookRestoreJob job)
+    {
+        _progress.Category = "Outlook";
+        _progress.Item = "Boîte aux lettres " + job.TargetName;
+        _progress.ExtraPhase = true;
+        _progress.ExtraDone = 0;
+        _progress.ExtraTotal = 0;
+        var reportFolder = Path.Combine(_plan.SafetyRoot, "Outlook");
+        var r = global::DataBridge.Core.Outlook.OutlookTransfer.Restore(job, reportFolder, s => _progress.CurrentFile = s, (done, total) =>
+        {
+            _progress.ExtraDone = done;
+            _progress.ExtraTotal = total;
+        }, _ct);
+        _result.Outlook = r;
+        if (Directory.Exists(reportFolder) && Directory.EnumerateFileSystemEntries(reportFolder).Any()) _result.SafetyUsed = true;
+        Issue(r.Ok ? IssueKind.Restored : IssueKind.Other, r.Ok ? IssueSeverity.Info : r.Cancelled ? IssueSeverity.Ignored : IssueSeverity.Error,
+            "Outlook — " + job.TargetName, r.Headline);
     }
 
     // ------------------------------------------------------------------ errors and counters

@@ -59,9 +59,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable, IExplorerHost
         Browsers = new BrowsersViewModel(this);
         Wifi = new WifiViewModel(this);
         Wallpaper = new WallpaperViewModel(this);
+        Printers = new PrintersViewModel(this);
         Summary = new SummaryViewModel(this);
         Copy = new CopyViewModel(this);
-        Pages = [Home, Destination, Personal, Additional, Outlook, Browsers, Wifi, Wallpaper, Summary, Copy];
+        Pages = [Home, Destination, Personal, Additional, Outlook, Browsers, Wifi, Wallpaper, Printers, Summary, Copy];
         Copy.IsEnabled = false;
         _currentPage = Home;
 
@@ -77,6 +78,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable, IExplorerHost
         _timer.Tick += (_, _) => Tick();
         _timer.Start();
         Wifi.Load();
+        Printers.Load();
         Tick();
     }
 
@@ -97,6 +99,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable, IExplorerHost
     public BrowsersViewModel Browsers { get; }
     public WifiViewModel Wifi { get; }
     public WallpaperViewModel Wallpaper { get; }
+    public PrintersViewModel Printers { get; }
     public SummaryViewModel Summary { get; }
     public CopyViewModel Copy { get; }
     public ObservableCollection<WizardPage> Pages { get; }

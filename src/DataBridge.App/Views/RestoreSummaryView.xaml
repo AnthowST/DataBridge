@@ -51,7 +51,7 @@
 
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="28,24,28,24">
-            <TextBlock Text="8. Résumé avant restauration" Style="{StaticResource PageTitle}" />
+            <TextBlock Text="9. Résumé avant restauration" Style="{StaticResource PageTitle}" />
             <TextBlock Style="{StaticResource PageSubtitle}"
                        Text="Vérifiez la sauvegarde source, la session de destination et chaque correspondance avant de lancer la restauration." />
 

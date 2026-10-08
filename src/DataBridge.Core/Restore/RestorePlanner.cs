@@ -210,6 +210,22 @@ public static class RestorePlanner
             else notSelected.Add("Fond d'écran : non sélectionné");
         }
 
+        // 7. Printers: the PrintBridge plan analysed against this PC (only selected, restorable printers are touched).
+        var printers = s.Printers?.Plan;
+        if (printers != null)
+            foreach (var p in printers.Printers.Where(p => !p.Selected))
+                notSelected.Add($"Imprimante {p.Entry.Name} : non sélectionnée");
+
+        // 8. Outlook mailbox → the mailbox of this profile chosen by the technician (never guessed).
+        Outlook.OutlookRestoreJob? outlook = null;
+        if (s.Mailbox is { } mb)
+        {
+            if (!mb.Include) notSelected.Add("Boîte Outlook : non sélectionnée");
+            else if (mb.TargetStoreId != null)
+                outlook = new Outlook.OutlookRestoreJob(mb.Source.PstFullPath, mb.Source.AutocompleteFullPath, mb.TargetStoreId, mb.TargetName ?? "",
+                    mb.Selected & mb.Source.Available, mb.IntoNewFolder, mb.ReplaceAutocompleteCache);
+        }
+
         return new RestorePlan
         {
             Backup = backup,
@@ -218,6 +234,8 @@ public static class RestorePlanner
             Wifi = wifi,
             WifiExisting = s.WifiExisting,
             Wallpaper = wallpaper,
+            Printers = printers,
+            Outlook = outlook,
             Policy = s.Policy,
             NotSelected = notSelected,
             SafetyRoot = safetyRoot,
@@ -262,6 +280,33 @@ public static class RestorePlanner
                 Block($"{item.Label} : la destination et la sauvegarde se recouvrent ({item.DestinationPath}). Placez la sauvegarde ailleurs.");
             else if (!DestinationReachable(item.DestinationPath))
                 Block($"{item.Label} : destination inaccessible ({item.DestinationPath}).");
+        }
+
+        // Outlook mailbox: an explicit target, and Outlook open (DataBridge never starts it).
+        if (s.Mailbox is { Include: true, TargetStoreId: null })
+            Block("Boîte Outlook : choisissez la boîte de destination (« Lister les boîtes Outlook », étape Outlook).");
+        if (plan.Outlook != null && !Outlook.OutlookSession.IsOutlookRunning())
+            Block("Boîte Outlook : ouvrez Outlook classique sur ce PC avant de lancer la restauration.");
+        if (plan.Outlook != null)
+            Warn("La boîte Outlook est restaurée par ajout uniquement : rien n'est supprimé ni modifié dans la boîte de destination, aucun mail n'est envoyé.");
+
+        // Printers: archive checked and analysed, blocking problems of the analysis, one UAC prompt when needed.
+        if (s.Backup.Printers != null)
+        {
+            if (s.Printers is null) Warn("Imprimantes : analyse de ce PC en cours.");
+            else if (s.Printers.Error != null) Warn("Imprimantes non restaurables : " + s.Printers.Error);
+            else if (s.Printers.Plan is { } pp && pp.Printers.Any(p => p.Selected))
+            {
+                foreach (var g in pp.GlobalIssues)
+                {
+                    if (g.Level == DataBridge.Printers.Restore.IssueLevel.Blocking) Block("Imprimantes : " + g.Text);
+                    else if (g.Level == DataBridge.Printers.Restore.IssueLevel.Warning) Warn("Imprimantes : " + g.Text);
+                }
+                foreach (var p in pp.Printers.Where(p => p.Selected && !p.CanRestore))
+                    Warn($"Imprimante {p.Entry.Name} : {p.StatusSummary} — elle ne sera pas restaurée.");
+                if (plan.PrintersNeedAdmin)
+                    Warn("Imprimantes : Windows demandera une seule fois les droits administrateur (pilote, port, file d'impression). Le reste de la restauration n'en a pas besoin.");
+            }
         }
 
         if (plan.IsEmpty && issues.All(i => !i.IsBlocking)) Block("Rien n'est sélectionné.");

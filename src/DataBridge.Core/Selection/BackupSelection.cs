@@ -61,6 +61,12 @@ public sealed class BackupSelection
     public bool IncludeWallpaper { get; set; } = true;
     public List<WifiProfileInfo> WifiProfiles { get; } = [];
     public HashSet<string> SelectedWifi { get; } = new(StringComparer.Ordinal);
+    /// <summary>Outlook mailbox to export (2.1): chosen on the Outlook page, null when none was chosen.</summary>
+    public Outlook.OutlookBackupJob? OutlookMailbox { get; set; }
+    /// <summary>Printers of this PC (2.1), read on the Imprimantes page; null until then.</summary>
+    public DataBridge.Printers.Inventory.LiveInventory? PrinterInventory { get; set; }
+    /// <summary>Checked printers (PrintBridge printer ids).</summary>
+    public HashSet<string> SelectedPrinters { get; } = new(StringComparer.Ordinal);
     /// <summary>OneDrive accounts of the session (identification only), reported in the log.</summary>
     public OneDriveDetection OneDrive { get; set; } = OneDriveDetection.Empty;
     /// <summary>Do not download "online-only" OneDrive/cloud files (default).</summary>
@@ -274,6 +280,13 @@ public sealed class BackupSelection
         // 6. Wi-Fi
         var wifi = WifiProfiles.Where(p => SelectedWifi.Contains(p.Name)).ToList();
 
+        // 7. Printers (export to a .prnbak, read-only) and Outlook mailbox (new PST), after the files.
+        var printerIds = PrinterInventory?.Printers.Where(p => SelectedPrinters.Contains(p.Entry.Id)).Select(p => p.Entry.Id).ToList() ?? [];
+        if (PrinterInventory != null)
+            foreach (var p in PrinterInventory.Printers.Where(p => !SelectedPrinters.Contains(p.Entry.Id)))
+                notSelected.Add($"Imprimante {p.Entry.Name} : non sélectionnée");
+        var mailbox = OutlookMailbox is { Categories: not Outlook.OutlookCategories.None } m ? m : null;
+
         return new CopyPlan
         {
             Profile = Profile,
@@ -281,6 +294,8 @@ public sealed class BackupSelection
             BackupFolderName = backupFolderName,
             Jobs = jobs,
             Wifi = wifi.Count > 0 ? new WifiJob(wifi, @"Network\WiFi") : null,
+            Printers = printerIds.Count > 0 ? new PrinterTransfer.PrinterBackupJob(PrinterInventory!, printerIds) : null,
+            Outlook = mailbox,
             SkipCloudOnly = SkipCloudOnly,
             NotSelected = notSelected,
             OneDriveLines = OneDriveLogLines(),

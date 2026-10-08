@@ -1,0 +1,119 @@
+<UserControl x:Class="DataBridge.App.Views.RestorePrintersView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:DataBridge.App.ViewModels">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="28,24,28,24">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Top" Visibility="{Binding IsPresent, Converter={StaticResource Visible}}">
+                    <Button Style="{StaticResource GhostButton}" Content="Tout cocher" Command="{Binding SelectAllCommand}" />
+                    <Button Style="{StaticResource GhostButton}" Content="Tout décocher" Command="{Binding SelectNoneCommand}" />
+                </StackPanel>
+                <StackPanel>
+                    <TextBlock Text="{Binding PageTitle}" Style="{StaticResource PageTitle}" />
+                    <TextBlock Style="{StaticResource PageSubtitle}"
+                               Text="Imprimantes de la sauvegarde recréées sur ce PC : file, port TCP/IP, pilote de la sauvegarde, réglages, préférences et imprimante par défaut. Une imprimante déjà présente sous le même nom n'est jamais modifiée." />
+                </StackPanel>
+            </DockPanel>
+
+            <Border Style="{StaticResource Card}" Margin="0,18,0,0" Visibility="{Binding IsPresent, Converter={StaticResource Hidden}}"
+                    AutomationProperties.AutomationId="PrintersAbsent">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Style="{StaticResource Icon}" Text="&#xE946;" FontSize="14" Foreground="{StaticResource TextTertiary}" Margin="0,1,10,0" />
+                    <TextBlock Text="Non présent dans cette sauvegarde." Foreground="{StaticResource TextMuted}" />
+                </StackPanel>
+            </Border>
+
+            <StackPanel Visibility="{Binding IsPresent, Converter={StaticResource Visible}}">
+                <Border Style="{StaticResource Banner}" Margin="0,16,0,0" Visibility="{Binding NeedsAdmin, Converter={StaticResource Visible}}"
+                        AutomationProperties.AutomationId="PrintersAdminBanner">
+                    <DockPanel>
+                        <TextBlock Style="{StaticResource Icon}" Text="&#xE7EF;" Foreground="{StaticResource Warning}" VerticalAlignment="Top" Margin="0,1,10,0" />
+                        <StackPanel>
+                            <TextBlock Text="Droits administrateur demandés une seule fois" FontWeight="SemiBold" />
+                            <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TextMuted}" Margin="0,2,0,0"
+                                       Text="Créer un pilote, un port TCP/IP ou une file d'impression nécessite les droits administrateur : pendant la restauration, Windows affichera une invite UAC (une seule fois, uniquement pour les imprimantes cochées qui en ont besoin). Le reste de DataBridge fonctionne sans élévation. Si l'invite est refusée, ces imprimantes ne sont pas restaurées." />
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
+                <Border Style="{StaticResource Card}" Margin="0,14,0,0" Visibility="{Binding IsAnalyzing, Converter={StaticResource Visible}}">
+                    <TextBlock Text="Vérification de la sauvegarde et analyse des imprimantes de ce PC (rien n'est modifié)…" Foreground="{StaticResource TextMuted}" />
+                </Border>
+                <Border Style="{StaticResource DangerBanner}" Margin="0,14,0,0" Visibility="{Binding Message, Converter={StaticResource NotEmpty}}">
+                    <DockPanel>
+                        <TextBlock Style="{StaticResource Icon}" Text="&#xE783;" Margin="0,0,10,0" VerticalAlignment="Top" />
+                        <TextBlock Text="{Binding Message}" TextWrapping="Wrap" AutomationProperties.AutomationId="RestorePrintersMessage" />
+                    </DockPanel>
+                </Border>
+
+                <Border Margin="0,14,0,0" Padding="0">
+                    <Border.Style>
+                        <Style TargetType="Border" BasedOn="{StaticResource Card}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Items.Count}" Value="0">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <ItemsControl ItemsSource="{Binding Items}" AutomationProperties.AutomationId="RestorePrintersList">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:RestorePrinterItemViewModel}">
+                                <Border BorderBrush="{StaticResource Border}" BorderThickness="0,0,0,1" Padding="16,11">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}" IsEnabled="{Binding IsSelectable}" VerticalAlignment="Center"
+                                                  AutomationProperties.Name="{Binding Name}" AutomationProperties.AutomationId="RestorePrinterCheck" />
+                                        <StackPanel Grid.Column="1" Margin="4,0,0,0" VerticalAlignment="Center">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Style="{StaticResource Icon}" Text="&#xE749;" FontSize="14" Foreground="{StaticResource Accent}" Margin="0,0,8,0" />
+                                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                                                <Border Style="{StaticResource Badge}"><TextBlock Text="{Binding KindText}" /></Border>
+                                                <Border Style="{StaticResource TealBadge}" Visibility="{Binding IsDefault, Converter={StaticResource Visible}}"><TextBlock Text="Par défaut" /></Border>
+                                                <Border Style="{StaticResource WarningBadge}" Visibility="{Binding NeedsAdmin, Converter={StaticResource Visible}}"><TextBlock Text="Administrateur" /></Border>
+                                            </StackPanel>
+                                            <TextBlock Style="{StaticResource Small}" Margin="22,2,0,0" TextWrapping="Wrap">
+                                                <Run Text="{Binding DriverText, Mode=OneWay}" /><Run Text="   " /><Run Text="{Binding PortText, Mode=OneWay}" FontFamily="{StaticResource MonoFont}" />
+                                            </TextBlock>
+                                        </StackPanel>
+                                        <TextBlock x:Name="State" Grid.Column="2" Text="{Binding StatusText}" FontSize="12" Foreground="{StaticResource Success}" VerticalAlignment="Center"
+                                                   MaxWidth="300" TextWrapping="Wrap" TextAlignment="Right" AutomationProperties.AutomationId="RestorePrinterState" />
+                                    </Grid>
+                                </Border>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding Ready}" Value="False">
+                                        <Setter TargetName="State" Property="Foreground" Value="{StaticResource TextMuted}" />
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Border>
+
+                <ItemsControl ItemsSource="{Binding Notes}" Margin="0,10,0,0">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <DockPanel Margin="0,3">
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE946;" FontSize="12" Foreground="{StaticResource TextTertiary}" Margin="0,2,8,0" VerticalAlignment="Top" />
+                                <TextBlock Text="{Binding}" Style="{StaticResource Small}" TextWrapping="Wrap" />
+                            </DockPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <Border Style="{StaticResource InfoBanner}" Margin="0,14,0,0">
+                    <DockPanel>
+                        <TextBlock Style="{StaticResource Icon}" Text="&#xE946;" Foreground="{StaticResource Accent}" VerticalAlignment="Top" Margin="0,1,10,0" />
+                        <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TextMuted}"
+                                   Text="Les options constructeur ne sont restaurées complètement qu'avec le même pilote dans la même version. Chaque création est notée dans un journal. Aucune page de test n'est imprimée : vérifiez l'impression vous-même après la restauration." />
+                    </DockPanel>
+                </Border>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

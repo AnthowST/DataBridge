@@ -9,6 +9,10 @@ using DataBridge.Core;
 using DataBridge.Core.Copy;
 using DataBridge.Core.Detection;
 using DataBridge.Core.IO;
+using DataBridge.Core.Outlook;
+using DataBridge.Core.PrinterTransfer;
+using NameAction = DataBridge.Printers.Restore.NameAction;
+using PrinterPlan = DataBridge.Printers.Restore.PrinterPlan;
 using DataBridge.Core.Restore;
 
 namespace DataBridge.App.ViewModels;
@@ -260,20 +264,31 @@ public sealed class RestoreAdditionalViewModel : RestorePageViewModel
     }
 }
 
-// ====================================================================== 4. Signatures Outlook
+// ====================================================================== 4. Outlook
 
-public sealed class RestoreOutlookViewModel(RestoreViewModel restore) : RestorePageViewModel(restore, 4, "Signatures Outlook", "", "R_Nav_Outlook")
+public sealed class RestoreOutlookViewModel : RestorePageViewModel
 {
-    public bool IsPresent => Sel?.Backup.Signatures != null;
+    private IReadOnlyList<StoreEntry> _stores = [];
+    private bool _isBusy;
+    private string _mailboxMessage = "";
+
+    public RestoreOutlookViewModel(RestoreViewModel restore) : base(restore, 4, "Outlook", "", "R_Nav_Outlook")
+    {
+        ListStoresCommand = new RelayCommand(ListStores, () => !IsBusy && HasMailbox);
+    }
+
+    // ---------------------------------------------------------------- signatures
+    public bool HasSignatures => Sel?.Backup.Signatures != null;
+    public bool IsPresent => HasSignatures || HasMailbox;
     public IReadOnlyList<string> Names => Sel?.Backup.Signatures?.Names ?? [];
-    public string CountText => IsPresent ? Format.Plural(Names.Count, "signature dans la sauvegarde", "signatures dans la sauvegarde") : "";
+    public string CountText => HasSignatures ? Format.Plural(Names.Count, "signature dans la sauvegarde", "signatures dans la sauvegarde") : "";
     public string SourceText => Sel?.Backup.Signatures?.RelativePath ?? "";
     public string OriginalText => Sel?.Backup.Signatures?.OriginalPath ?? "inconnu";
     public string DestinationText => Restore.Target.SignaturesPath;
 
     public bool Include
     {
-        get => Sel?.IncludeSignatures == true && IsPresent;
+        get => Sel?.IncludeSignatures == true && HasSignatures;
         set
         {
             if (Sel is null) return;
@@ -284,17 +299,157 @@ public sealed class RestoreOutlookViewModel(RestoreViewModel restore) : RestoreP
         }
     }
 
-    public void Load()
+    // ---------------------------------------------------------------- mailbox (2.1)
+    private RestoreMailboxChoice? Mailbox => Sel?.Mailbox;
+    public bool HasMailbox => Mailbox != null;
+    public string MailboxName => Mailbox?.Source.MailboxName ?? "";
+    public string MailboxContentText
     {
-        foreach (var n in new[] { nameof(IsPresent), nameof(Names), nameof(CountText), nameof(SourceText), nameof(OriginalText), nameof(DestinationText), nameof(Include) })
+        get
+        {
+            if (Mailbox?.Source is not { } m) return "";
+            var parts = new List<string>();
+            if (m.Available.HasFlag(OutlookCategories.Mails)) parts.Add(Format.Plural(m.Mails, "mail", "mails"));
+            if (m.Available.HasFlag(OutlookCategories.Calendar)) parts.Add(Format.Plural(m.Events, "événement", "événements"));
+            if (m.Available.HasFlag(OutlookCategories.Contacts)) parts.Add(Format.Plural(m.Contacts, "contact", "contacts"));
+            if (m.Available.HasFlag(OutlookCategories.Autocomplete)) parts.Add("autocomplétion");
+            return string.Join(" · ", parts);
+        }
+    }
+    public string PstText => Mailbox?.Source.PstRelative ?? "aucun PST (autocomplétion seulement)";
+
+    public bool CanMails => Available(OutlookCategories.Mails);
+    public bool CanCalendar => Available(OutlookCategories.Calendar);
+    public bool CanContacts => Available(OutlookCategories.Contacts);
+    public bool CanAutocomplete => Available(OutlookCategories.Autocomplete);
+    public bool IncludeMails { get => Has(OutlookCategories.Mails); set => Toggle(OutlookCategories.Mails, value); }
+    public bool IncludeCalendar { get => Has(OutlookCategories.Calendar); set => Toggle(OutlookCategories.Calendar, value); }
+    public bool IncludeContacts { get => Has(OutlookCategories.Contacts); set => Toggle(OutlookCategories.Contacts, value); }
+    public bool IncludeAutocomplete { get => Has(OutlookCategories.Autocomplete); set => Toggle(OutlookCategories.Autocomplete, value); }
+
+    public bool IntoNewFolder
+    {
+        get => Mailbox?.IntoNewFolder == true;
+        set
+        {
+            if (Mailbox is null) return;
+            Mailbox.IntoNewFolder = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(MergeFolders));
+            Restore.SelectionChanged();
+        }
+    }
+
+    public bool MergeFolders
+    {
+        get => !IntoNewFolder;
+        set { if (value) IntoNewFolder = false; }
+    }
+
+    public bool ReplaceAutocompleteCache
+    {
+        get => Mailbox?.ReplaceAutocompleteCache == true;
+        set
+        {
+            if (Mailbox is null) return;
+            Mailbox.ReplaceAutocompleteCache = value;
+            OnPropertyChanged();
+            Restore.SelectionChanged();
+        }
+    }
+
+    public ICommand ListStoresCommand { get; }
+    public IReadOnlyList<OutlookStoreOption> StoreOptions { get; private set; } = [];
+    public bool HasStores => _stores.Count > 0;
+    public bool IsBusy { get => _isBusy; private set { if (Set(ref _isBusy, value)) CommandManager.InvalidateRequerySuggested(); } }
+    public string MailboxMessage { get => _mailboxMessage; private set => Set(ref _mailboxMessage, value); }
+    public string TargetText => Mailbox?.TargetName is { Length: > 0 } t ? t : "Aucune boîte choisie";
+
+    private bool Available(OutlookCategories c) => Mailbox?.Source.Available.HasFlag(c) == true;
+    private bool Has(OutlookCategories c) => Available(c) && Mailbox!.Selected.HasFlag(c);
+
+    private void Toggle(OutlookCategories c, bool value)
+    {
+        if (Mailbox is null) return;
+        Mailbox.Selected = value ? Mailbox.Selected | c : Mailbox.Selected & ~c;
+        NotifyMailbox();
+        Restore.SelectionChanged();
+    }
+
+    /// <summary>Lists the mailboxes of the Outlook profile of this PC (Outlook must be open). The target is never preselected.</summary>
+    private async void ListStores()
+    {
+        IsBusy = true;
+        MailboxMessage = "Connexion à Outlook…";
+        try
+        {
+            var stores = await OutlookSession.Shared.RunAsync(s => s.ListStores());
+            _stores = stores;
+            StoreOptions = stores.Select(s => new OutlookStoreOption(s, () => _stores.FirstOrDefault(x => x.StoreId == Mailbox?.TargetStoreId), Choose)).ToList();
+            MailboxMessage = stores.Count == 0 ? "Aucune boîte trouvée dans le profil Outlook de ce PC." : "";
+            if (Mailbox?.TargetStoreId != null && stores.All(s => s.StoreId != Mailbox.TargetStoreId))
+            {
+                Mailbox.TargetStoreId = null;
+                Mailbox.TargetName = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            MailboxMessage = ex.Message;
+        }
+        finally
+        {
+            IsBusy = false;
+            OnPropertyChanged(nameof(StoreOptions));
+            OnPropertyChanged(nameof(HasStores));
+            NotifyMailbox();
+            Restore.SelectionChanged();
+        }
+    }
+
+    private void Choose(StoreEntry store)
+    {
+        if (Mailbox is null) return;
+        Mailbox.TargetStoreId = store.StoreId;
+        Mailbox.TargetName = string.IsNullOrWhiteSpace(store.DisplayName) ? store.Description : store.DisplayName;
+        foreach (var o in StoreOptions) o.Refresh();
+        NotifyMailbox();
+        Restore.SelectionChanged();
+    }
+
+    private void NotifyMailbox()
+    {
+        foreach (var n in new[]
+                 {
+                     nameof(IncludeMails), nameof(IncludeCalendar), nameof(IncludeContacts), nameof(IncludeAutocomplete), nameof(TargetText),
+                     nameof(IntoNewFolder), nameof(MergeFolders), nameof(ReplaceAutocompleteCache),
+                 })
             OnPropertyChanged(n);
         UpdateSidebar();
     }
 
+    public void Load()
+    {
+        _stores = [];
+        StoreOptions = [];
+        MailboxMessage = "";
+        foreach (var n in new[]
+                 {
+                     nameof(HasSignatures), nameof(IsPresent), nameof(Names), nameof(CountText), nameof(SourceText), nameof(OriginalText), nameof(DestinationText),
+                     nameof(Include), nameof(HasMailbox), nameof(MailboxName), nameof(MailboxContentText), nameof(PstText), nameof(CanMails), nameof(CanCalendar),
+                     nameof(CanContacts), nameof(CanAutocomplete), nameof(StoreOptions), nameof(HasStores),
+                 })
+            OnPropertyChanged(n);
+        NotifyMailbox();
+        CommandManager.InvalidateRequerySuggested();
+    }
+
     private void UpdateSidebar()
     {
-        Status = !IsPresent ? "Absent de la sauvegarde" : Include ? Format.Plural(Names.Count, "signature", "signatures") : "Non inclus";
-        IsDone = Include;
+        var signatures = !HasSignatures ? "" : Include ? Format.Plural(Names.Count, "signature", "signatures") : "signatures non incluses";
+        var mailbox = Mailbox is null ? "" : !Mailbox.Include ? "boîte non incluse" : Mailbox.TargetStoreId is null ? "boîte : destination à choisir" : "boîte → " + Mailbox.TargetName;
+        Status = !IsPresent ? "Absent de la sauvegarde" : string.Join(" · ", new[] { signatures, mailbox }.Where(s => s.Length > 0));
+        IsDone = Include || Mailbox is { Include: true, TargetStoreId: not null };
     }
 }
 
@@ -607,5 +762,129 @@ public sealed class RestoreWallpaperViewModel(RestoreViewModel restore) : Restor
     {
         Status = !IsPresent ? "Absent de la sauvegarde" : Include ? "Inclus" : "Non inclus";
         IsDone = Include;
+    }
+}
+
+// ====================================================================== 8. Imprimantes (2.1)
+
+public sealed class RestorePrinterItemViewModel(PrinterPlan plan, RestorePrintersViewModel owner) : ObservableObject
+{
+    public PrinterPlan Plan { get; } = plan;
+    public string Name => Plan.TargetName;
+    public string KindText => Plan.KindText;
+    public string DriverText => Plan.Entry.DriverName ?? "";
+    public string PortText => Plan.IsConnection ? "" : Plan.Port?.Name ?? Plan.Entry.PortName ?? "";
+    public string StatusText => Plan.IsSupported && Plan.NameAction == NameAction.Skip && Plan.NameConflict
+        ? "Déjà présente sur ce PC (même nom) : non modifiée"
+        : Plan.StatusSummary;
+    public bool Ready => Plan.CanRestore;
+    public bool NeedsAdmin => Plan.RequiresAdmin;
+    public bool IsDefault => Plan.MakeDefault;
+    /// <summary>A printer already present under the same name (or not restorable) is never touched: no checkbox.</summary>
+    public bool IsSelectable => Plan.IsSupported && Plan.NameAction != NameAction.Skip;
+
+    public bool IsSelected
+    {
+        get => Plan.Selected && IsSelectable;
+        set
+        {
+            if (!IsSelectable) return;
+            Plan.Selected = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(NeedsAdmin));
+            owner.SelectionChanged();
+        }
+    }
+}
+
+public sealed class RestorePrintersViewModel : RestorePageViewModel
+{
+    private bool _isAnalyzing;
+    private string? _message;
+    private PrinterRestoreSource? _source;
+    private IReadOnlyList<string> _notes = [];
+
+    public RestorePrintersViewModel(RestoreViewModel restore) : base(restore, 8, "Imprimantes", "", "R_Nav_Printers")
+    {
+        SelectAllCommand = new RelayCommand(() => SetAll(true));
+        SelectNoneCommand = new RelayCommand(() => SetAll(false));
+    }
+
+    public ICommand SelectAllCommand { get; }
+    public ICommand SelectNoneCommand { get; }
+    public ObservableCollection<RestorePrinterItemViewModel> Items { get; } = [];
+    public bool IsPresent => Sel?.Backup.Printers != null;
+    public bool IsAnalyzing { get => _isAnalyzing; private set => Set(ref _isAnalyzing, value); }
+    public string? Message { get => _message; private set => Set(ref _message, value); }
+    /// <summary>Points of attention of the analysis (Windows version, account, spooler...).</summary>
+    public IReadOnlyList<string> Notes { get => _notes; private set => Set(ref _notes, value); }
+    public bool NeedsAdmin => Items.Any(i => i.IsSelected && i.NeedsAdmin);
+    public string ArchiveText => Sel?.Backup.Printers is { } p ? $"{p.RelativePath} · {Format.Size(p.Size)}" : "";
+
+    /// <summary>Checks the archive and analyses this PC in the background (read-only: nothing is created or changed).</summary>
+    public void Load()
+    {
+        DisposeSource();
+        Items.Clear();
+        Message = null;
+        Notes = [];
+        OnPropertyChanged(nameof(IsPresent));
+        OnPropertyChanged(nameof(ArchiveText));
+        var selection = Sel;
+        if (selection?.Backup.Printers is not { } printers)
+        {
+            UpdateSidebar();
+            return;
+        }
+        IsAnalyzing = true;
+        UpdateSidebar();
+        Task.Run(() => PrinterRestoreSource.Open(printers.FullPath)).ContinueWith(t =>
+        {
+            var source = t.IsCompletedSuccessfully ? t.Result : new PrinterRestoreSource { ArchivePath = printers.FullPath, Error = t.Exception?.InnerException?.Message };
+            if (!ReferenceEquals(selection, Sel))
+            {
+                source.Dispose(); // another backup was chosen meanwhile
+                return;
+            }
+            _source = source;
+            selection.Printers = source;
+            if (source.Plan is { } plan)
+            {
+                foreach (var p in plan.Printers) Items.Add(new RestorePrinterItemViewModel(p, this));
+                Notes = plan.GlobalIssues.Select(i => i.Text).ToList();
+            }
+            Message = source.Error;
+            IsAnalyzing = false;
+            OnPropertyChanged(nameof(NeedsAdmin));
+            UpdateSidebar();
+            Restore.SelectionChanged();
+        }, TaskScheduler.FromCurrentSynchronizationContext());
+    }
+
+    public void SelectionChanged()
+    {
+        OnPropertyChanged(nameof(NeedsAdmin));
+        UpdateSidebar();
+        Restore.SelectionChanged();
+    }
+
+    private void SetAll(bool value)
+    {
+        foreach (var item in Items) item.IsSelected = value;
+    }
+
+    public void DisposeSource()
+    {
+        _source?.Dispose();
+        _source = null;
+    }
+
+    private void UpdateSidebar()
+    {
+        if (!IsPresent) { Status = "Absent de la sauvegarde"; IsDone = false; return; }
+        if (IsAnalyzing) { Status = "Analyse…"; IsDone = false; return; }
+        var n = Items.Count(i => i.IsSelected);
+        Status = Items.Count == 0 ? "Inutilisable" : $"{n} / {Items.Count} imprimante(s)" + (NeedsAdmin ? " · admin" : "");
+        IsDone = n > 0;
     }
 }

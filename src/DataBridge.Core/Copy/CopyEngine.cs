@@ -124,6 +124,10 @@ public sealed class CopyEngine
 
             if (!StopRequested && _plan.Wifi is { } wifi)
                 RunWifi(wifi);
+            if (!StopRequested && _plan.Printers is { } printers)
+                RunPrinters(printers);
+            if (!StopRequested && _plan.Outlook is { } mailbox)
+                RunOutlook(mailbox);
         }
         catch (Exception ex)
         {
@@ -305,6 +309,43 @@ public sealed class CopyEngine
             _result.Wifi.Add(r);
             _progress.WifiDone++;
         }
+    }
+
+    /// <summary>Printers → Imprimantes\Imprimantes.prnbak (read-only export, session rights). A failure is reported, the backup goes on.</summary>
+    private void RunPrinters(PrinterTransfer.PrinterBackupJob job)
+    {
+        _progress.Phase = "Imprimantes";
+        _progress.Category = Categories.Printers;
+        _progress.Item = "Imprimantes";
+        _progress.ExtraPhase = true;
+        _progress.ExtraDone = 0;
+        _progress.ExtraTotal = 0;
+        var r = PrinterTransfer.PrinterTransferService.Backup(job, _backupRoot, s => _progress.CurrentFile = s, _ct);
+        _result.Printers = r;
+        if (r.Error != null)
+            Issue(IssueKind.Other, IssueSeverity.Error, Path.Combine(_backupRoot, PrinterTransfer.PrinterBackupJob.DestinationRelative),
+                "Export des imprimantes impossible : " + r.Error);
+        else if (r.ArchivePath != null)
+            Issue(IssueKind.Other, IssueSeverity.Info, r.ArchivePath, $"{Format.Plural(r.Printers.Count, "imprimante exportée", "imprimantes exportées")} ({Format.Size(r.ArchiveSize)}).");
+    }
+
+    /// <summary>Outlook mailbox → new PST in Outlook\Boite (everything of the checked categories). A failure is reported, the backup goes on.</summary>
+    private void RunOutlook(Outlook.OutlookBackupJob job)
+    {
+        _progress.Phase = "Outlook";
+        _progress.Category = Categories.Outlook;
+        _progress.Item = "Boîte aux lettres " + job.StoreName;
+        _progress.ExtraPhase = true;
+        _progress.ExtraDone = 0;
+        _progress.ExtraTotal = 0;
+        var r = global::DataBridge.Core.Outlook.OutlookTransfer.Backup(job, _backupRoot, s => _progress.CurrentFile = s, (done, total) =>
+        {
+            _progress.ExtraDone = done;
+            _progress.ExtraTotal = total;
+        }, _ct);
+        _result.Outlook = r;
+        if (!r.Ok && !r.Cancelled)
+            Issue(IssueKind.Other, IssueSeverity.Error, "Outlook — " + job.StoreName, r.Headline);
     }
 
     // ------------------------------------------------------------------ file operations

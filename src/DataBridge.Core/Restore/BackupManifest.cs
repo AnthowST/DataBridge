@@ -34,6 +34,10 @@ public sealed class BackupManifest
     public List<ManifestBrowser> Browsers { get; set; } = [];
     public List<ManifestWifiProfile> Wifi { get; set; } = [];
     public ManifestWallpaper? Wallpaper { get; set; }
+    /// <summary>2.1: printers exported to a .prnbak archive (PrintBridge format). Optional: older readers ignore it.</summary>
+    public ManifestPrinters? Printers { get; set; }
+    /// <summary>2.1: Outlook mailbox exported to a new PST. Optional: older readers ignore it.</summary>
+    public ManifestOutlookMailbox? OutlookMailbox { get; set; }
 
     public static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -148,4 +152,36 @@ public sealed class ManifestWallpaper
     public string OriginalPath { get; set; } = "";
     public string RelativePath { get; set; } = "";
     public long Bytes { get; set; }
+}
+
+/// <summary>Printers archive (names, kinds and support level only; settings and drivers are inside the .prnbak).</summary>
+public sealed class ManifestPrinters
+{
+    public string File { get; set; } = "";
+    public long Bytes { get; set; }
+    public List<ManifestPrinter> Printers { get; set; } = [];
+}
+
+public sealed class ManifestPrinter
+{
+    public string Name { get; set; } = "";
+    public string Kind { get; set; } = "";
+    public bool Supported { get; set; }
+    public bool IsDefault { get; set; }
+}
+
+/// <summary>Outlook mailbox: the PST and the autocomplete copy, counters only (never a mail, a contact or an address).</summary>
+public sealed class ManifestOutlookMailbox
+{
+    public string MailboxName { get; set; } = "";
+    /// <summary>Categories requested: mails, calendar, contacts, autocomplete.</summary>
+    public List<string> Categories { get; set; } = [];
+    public string RelativePath { get; set; } = "";
+    public string? PstFile { get; set; }
+    public string? AutocompleteFile { get; set; }
+    public int Mails { get; set; }
+    public int Contacts { get; set; }
+    public int Events { get; set; }
+    /// <summary>completed / partial / cancelled / failed.</summary>
+    public string Status { get; set; } = "completed";
 }

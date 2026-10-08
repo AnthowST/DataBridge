@@ -287,6 +287,7 @@
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
                                 </Grid.RowDefinitions>
                                 <StackPanel Margin="0,0,16,12">
                                     <TextBlock Text="DONNÉES" Style="{StaticResource Label}" Margin="0,0,0,6" />
@@ -303,6 +304,14 @@
                                 <StackPanel Grid.Row="1" Grid.Column="1">
                                     <TextBlock Text="WINDOWS" Style="{StaticResource Label}" Margin="0,0,0,6" />
                                     <ItemsControl ItemsSource="{Binding WindowsLines}" ItemTemplate="{StaticResource ResultLineTemplate}" AutomationProperties.AutomationId="RestoreResultWindows" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="2" Margin="0,12,16,0">
+                                    <TextBlock Text="OUTLOOK" Style="{StaticResource Label}" Margin="0,0,0,6" />
+                                    <ItemsControl ItemsSource="{Binding OutlookLines}" ItemTemplate="{StaticResource ResultLineTemplate}" AutomationProperties.AutomationId="RestoreResultOutlook" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="2" Grid.Column="1" Margin="0,12,0,0">
+                                    <TextBlock Text="IMPRIMANTES" Style="{StaticResource Label}" Margin="0,0,0,6" />
+                                    <ItemsControl ItemsSource="{Binding PrinterLines}" ItemTemplate="{StaticResource ResultLineTemplate}" AutomationProperties.AutomationId="RestoreResultPrinters" />
                                 </StackPanel>
                             </Grid>
                         </StackPanel>

@@ -31,6 +31,7 @@
             <DataTemplate DataType="{x:Type vm:BrowsersViewModel}"><v:BrowsersView /></DataTemplate>
             <DataTemplate DataType="{x:Type vm:WifiViewModel}"><v:WifiView /></DataTemplate>
             <DataTemplate DataType="{x:Type vm:WallpaperViewModel}"><v:WallpaperView /></DataTemplate>
+            <DataTemplate DataType="{x:Type vm:PrintersViewModel}"><v:PrintersView /></DataTemplate>
             <DataTemplate DataType="{x:Type vm:SummaryViewModel}"><v:SummaryView /></DataTemplate>
             <DataTemplate DataType="{x:Type vm:CopyViewModel}"><v:CopyView /></DataTemplate>
 
@@ -41,6 +42,7 @@
             <DataTemplate DataType="{x:Type vm:RestoreBrowsersViewModel}"><v:RestoreBrowsersView /></DataTemplate>
             <DataTemplate DataType="{x:Type vm:RestoreWifiViewModel}"><v:RestoreWifiView /></DataTemplate>
             <DataTemplate DataType="{x:Type vm:RestoreWallpaperViewModel}"><v:RestoreWallpaperView /></DataTemplate>
+            <DataTemplate DataType="{x:Type vm:RestorePrintersViewModel}"><v:RestorePrintersView /></DataTemplate>
             <DataTemplate DataType="{x:Type vm:RestoreSummaryViewModel}"><v:RestoreSummaryView /></DataTemplate>
             <DataTemplate DataType="{x:Type vm:RestoreProgressViewModel}"><v:RestoreProgressView /></DataTemplate>
         </ResourceDictionary>

@@ -1,0 +1,12 @@
+﻿[18:06:45] Exe : C:\Users\Anthow\Software\profilecopy\src\DataBridge.App\bin\Debug\net10.0-windows\DataBridge.exe | version 2.1.0 | jeton : elevated=0;integrity=0x2000
+[18:06:57] Page Outlook : Analyser Outlook | bouton présent, NON cliqué (Outlook non touché)
+[18:07:06] Imprimantes listées : Brother DCP-L3560CDW series (restaurée)=On ; OneNote (Desktop)=Off ; Microsoft Print to PDF=Off ; Brother DCP-L3560CDW series=On
+[18:07:13] Sauvegarde : Sauvegarde terminée | fichiers 5 | erreurs 0
+[18:07:13] Résultat Outlook / imprimantes : Aucune boîte Outlook sauvegardée | 2 imprimantes sauvegardées (12 Mo)
+[18:07:14] Archive imprimantes : True (12510987 octets)
+[18:07:14] Manifest : version 2.1.0, catégories personalFolders, outlookSignatures, printers, imprimantes : Brother DCP-L3560CDW series (restaurée), Brother DCP-L3560CDW series
+[18:07:14] copy-log : section IMPRIMANTES True | section OUTLOOK True | 'Aucune boîte aux lettres sélectionnée' True
+[18:07:33] Restauration — Outlook : 1 250 mails · 37 événements · 84 contacts · autocomplétion | cible : Aucune boîte choisie | « Lister les boîtes » NON cliqué
+[18:07:36] Restauration — imprimantes : Brother DCP-L3560CDW series (restaurée)=Off actif=False ; Brother DCP-L3560CDW series=Off actif=False | états : Déjà présente sur ce PC (même nom) : non modifiée ; Déjà présente sur ce PC (même nom) : non modifiée | message : (absent)
+[18:07:42] Résumé : Résumé | 1 point(s) à corriger
+[18:07:44] Restauration NON lancée (aucune imprimante créée, Outlook non touché).

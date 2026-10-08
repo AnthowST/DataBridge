@@ -56,6 +56,35 @@ public sealed record BackupWifiProfile(string Name, string RelativePath, string 
 
 public sealed record BackupWallpaper(string RelativePath, string FullPath, long Size);
 
+/// <summary>Printers archive of a 2.1 backup (.prnbak, PrintBridge format).</summary>
+public sealed record BackupPrinters(string RelativePath, string FullPath, long Size, IReadOnlyList<ManifestPrinter> Printers);
+
+/// <summary>Outlook mailbox of a 2.1 backup: the PST (mails, calendar, contacts) and the autocomplete copy.</summary>
+public sealed record BackupMailbox(
+    string MailboxName,
+    Outlook.OutlookCategories Saved,
+    string? PstRelative,
+    string? PstFullPath,
+    string? AutocompleteRelative,
+    string? AutocompleteFullPath,
+    int Mails,
+    int Contacts,
+    int Events,
+    string Status)
+{
+    /// <summary>Categories that can really be restored from the files present in the backup.</summary>
+    public Outlook.OutlookCategories Available
+    {
+        get
+        {
+            var c = Outlook.OutlookCategories.None;
+            if (PstFullPath != null) c |= Saved & (Outlook.OutlookCategories.Mails | Outlook.OutlookCategories.Calendar | Outlook.OutlookCategories.Contacts);
+            if (AutocompleteFullPath != null) c |= Outlook.OutlookCategories.Autocomplete;
+            return c;
+        }
+    }
+}
+
 /// <summary>Normalized description of a backup, whatever its generation. Every FullPath has been checked to be inside <see cref="Root"/>.</summary>
 public sealed class BackupContent
 {
@@ -74,6 +103,8 @@ public sealed class BackupContent
     public IReadOnlyList<BackupBrowser> Browsers { get; init; } = [];
     public IReadOnlyList<BackupWifiProfile> Wifi { get; init; } = [];
     public BackupWallpaper? Wallpaper { get; init; }
+    public BackupPrinters? Printers { get; init; }
+    public BackupMailbox? Mailbox { get; init; }
 
     /// <summary>Non-blocking remarks (older generation, information unavailable, element missing...).</summary>
     public IReadOnlyList<string> Warnings { get; init; } = [];
@@ -95,9 +126,12 @@ public sealed class BackupContent
         if (Browsers.Count > 0) yield return "Navigateurs (" + string.Join(", ", Browsers.Select(b => BrowserProcessService.DisplayName(b.Kind).Split(' ')[^1])) + ")";
         if (Wifi.Count > 0) yield return Format.Plural(Wifi.Count, "profil Wi-Fi", "profils Wi-Fi");
         if (Wallpaper != null) yield return "Fond d'écran";
+        if (Printers != null) yield return Format.Plural(Printers.Printers.Count, "imprimante", "imprimantes");
+        if (Mailbox != null) yield return "Boîte Outlook";
     }
 
-    public bool IsEmpty => Personal.Count == 0 && Additional.Count == 0 && Signatures is null && Browsers.Count == 0 && Wifi.Count == 0 && Wallpaper is null;
+    public bool IsEmpty => Personal.Count == 0 && Additional.Count == 0 && Signatures is null && Browsers.Count == 0 && Wifi.Count == 0 && Wallpaper is null
+                           && Printers is null && Mailbox is null;
 }
 
 /// <summary>Result of opening a folder: the content, or why it cannot be restored.</summary>

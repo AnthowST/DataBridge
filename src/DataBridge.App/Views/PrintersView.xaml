@@ -1,0 +1,93 @@
+<UserControl x:Class="DataBridge.App.Views.PrintersView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:DataBridge.App.ViewModels">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="28,24,28,24">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Top">
+                    <Button Style="{StaticResource GhostButton}" Content="Tout cocher" Command="{Binding SelectAllCommand}" />
+                    <Button Style="{StaticResource GhostButton}" Content="Tout décocher" Command="{Binding SelectNoneCommand}" />
+                    <Button Style="{StaticResource GhostButton}" Command="{Binding RefreshCommand}" AutomationProperties.AutomationId="RefreshPrintersButton"
+                            AutomationProperties.Name="Actualiser">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE72C;" FontSize="12" Margin="0,0,6,0" />
+                            <TextBlock Text="Actualiser" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+                <StackPanel>
+                    <TextBlock Text="8. Imprimantes" Style="{StaticResource PageTitle}" />
+                    <TextBlock Style="{StaticResource PageSubtitle}"
+                               Text="Export des imprimantes de ce PC (file, port TCP/IP, pilote, réglages, préférences) dans Imprimantes\Imprimantes.prnbak, avec les droits de la session : aucune élévation n'est demandée pour la sauvegarde." />
+                </StackPanel>
+            </DockPanel>
+
+            <Border Style="{StaticResource InfoBanner}" Margin="0,16,0,0">
+                <DockPanel>
+                    <TextBlock Style="{StaticResource Icon}" Text="&#xE946;" Foreground="{StaticResource Accent}" VerticalAlignment="Top" Margin="0,1,10,0" />
+                    <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TextMuted}"
+                               Text="Restaurables : imprimantes réseau TCP/IP (RAW, LPR) et connexions partagées \\serveur\imprimante. Les autres (USB, WSD, virtuelles…) sont exportées pour information. À la restauration, Windows demandera une seule fois les droits administrateur si un pilote, un port ou une file doit être créé. Aucune page de test n'est imprimée." />
+                </DockPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}" Margin="0,14,0,0" Visibility="{Binding IsLoaded, Converter={StaticResource Hidden}}">
+                <TextBlock Text="Détection des imprimantes…" Foreground="{StaticResource TextMuted}" />
+            </Border>
+            <Border Style="{StaticResource Banner}" Margin="0,14,0,0" Visibility="{Binding Message, Converter={StaticResource NotEmpty}}">
+                <DockPanel>
+                    <TextBlock Style="{StaticResource Icon}" Text="&#xE946;" Foreground="{StaticResource Warning}" Margin="0,0,10,0" />
+                    <TextBlock Text="{Binding Message}" TextWrapping="Wrap" AutomationProperties.AutomationId="PrintersMessage" />
+                </DockPanel>
+            </Border>
+
+            <Border Margin="0,14,0,0" Padding="0">
+                <Border.Style>
+                    <Style TargetType="Border" BasedOn="{StaticResource Card}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Items.Count}" Value="0">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <ItemsControl ItemsSource="{Binding Items}" AutomationProperties.AutomationId="PrintersList">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:PrinterItemViewModel}">
+                            <Border BorderBrush="{StaticResource Border}" BorderThickness="0,0,0,1" Padding="16,11">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}" VerticalAlignment="Center" AutomationProperties.Name="{Binding Name}"
+                                              AutomationProperties.AutomationId="PrinterCheck" />
+                                    <StackPanel Grid.Column="1" Margin="4,0,0,0" VerticalAlignment="Center">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Style="{StaticResource Icon}" Text="&#xE749;" FontSize="14" Foreground="{StaticResource Accent}" Margin="0,0,8,0" />
+                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                                            <Border Style="{StaticResource Badge}"><TextBlock Text="{Binding KindText}" /></Border>
+                                            <Border Style="{StaticResource TealBadge}" Visibility="{Binding IsDefault, Converter={StaticResource Visible}}"><TextBlock Text="Par défaut" /></Border>
+                                            <Border Style="{StaticResource WarningBadge}" Visibility="{Binding IsOffline, Converter={StaticResource Visible}}"><TextBlock Text="Hors ligne" /></Border>
+                                        </StackPanel>
+                                        <TextBlock Style="{StaticResource Small}" Margin="22,2,0,0" TextWrapping="Wrap">
+                                            <Run Text="{Binding DriverText, Mode=OneWay}" /><Run Text="   " /><Run Text="{Binding PortText, Mode=OneWay}" FontFamily="{StaticResource MonoFont}" />
+                                        </TextBlock>
+                                    </StackPanel>
+                                    <TextBlock x:Name="Support" Grid.Column="2" Text="{Binding SupportText}" FontSize="12" Foreground="{StaticResource Success}" VerticalAlignment="Center"
+                                               MaxWidth="260" TextWrapping="Wrap" TextAlignment="Right" />
+                                </Grid>
+                            </Border>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding IsSupported}" Value="False">
+                                    <Setter TargetName="Support" Property="Foreground" Value="{StaticResource TextMuted}" />
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

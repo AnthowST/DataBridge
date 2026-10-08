@@ -62,6 +62,8 @@ public sealed class CopyLogWriter
             WriteBrowserEvents(log, plan);
             WriteJobs(log, plan, result);
             WriteWifi(log, result);
+            WritePrinters(log, plan, result);
+            WriteOutlookMailbox(log, plan, result);
             WriteSection(log, "ÉLÉMENTS IGNORÉS", "ignored", result.SkippedFileCount + result.InterruptedFileCount);
             WriteSection(log, "FICHIERS DISPONIBLES UNIQUEMENT EN LIGNE (OneDrive / cloud) — NON TÉLÉCHARGÉS, NON COPIÉS", "cloud", result.SkippedCloudOnlyCount);
             WriteSection(log, "ERREURS", "errors", result.ErrorCount);
@@ -248,6 +250,40 @@ public sealed class CopyLogWriter
             log.WriteLine($"{w.ProfileName} : profil exporté ({w.FileName}) — {key}");
         }
         log.WriteLine("Les clés Wi-Fi ne sont jamais écrites dans ce journal. Les fichiers XML exportés peuvent les contenir : à conserver en lieu sûr.");
+    }
+
+    private static void WritePrinters(StreamWriter log, CopyPlan plan, CopyResult result)
+    {
+        Title(log, "IMPRIMANTES");
+        if (plan.Printers is null)
+        {
+            log.WriteLine("Aucune imprimante sélectionnée.");
+            return;
+        }
+        if (result.Printers is null)
+        {
+            log.WriteLine("Non traité (copie arrêtée avant cette étape).");
+            return;
+        }
+        foreach (var line in result.Printers.LogLines()) log.WriteLine(line);
+        log.WriteLine("Export en lecture seule, avec les droits de la session. Aucune page de test n'est imprimée.");
+    }
+
+    private static void WriteOutlookMailbox(StreamWriter log, CopyPlan plan, CopyResult result)
+    {
+        Title(log, "OUTLOOK — BOÎTE AUX LETTRES");
+        if (plan.Outlook is null)
+        {
+            log.WriteLine("Aucune boîte aux lettres sélectionnée (signatures seulement, si incluses).");
+            return;
+        }
+        if (result.Outlook is null)
+        {
+            log.WriteLine("Non traité (copie arrêtée avant cette étape).");
+            return;
+        }
+        foreach (var line in result.Outlook.LogLines()) log.WriteLine(line);
+        log.WriteLine("La boîte source n'est que lue : rien n'y est déplacé, supprimé ni envoyé.");
     }
 
     private void WriteSection(StreamWriter log, string title, string section, int count)

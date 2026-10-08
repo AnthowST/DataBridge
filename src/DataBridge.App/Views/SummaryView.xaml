@@ -42,7 +42,7 @@
 
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="28,24,28,24">
-            <TextBlock Text="8. Résumé avant la copie" Style="{StaticResource PageTitle}" />
+            <TextBlock Text="9. Résumé avant la copie" Style="{StaticResource PageTitle}" />
             <TextBlock Style="{StaticResource PageSubtitle}" Text="Vérifiez la sélection. Les tailles correspondent exactement aux éléments cochés." />
 
             <!-- Destination inside a selected source: blocking -->

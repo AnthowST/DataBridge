@@ -34,7 +34,7 @@ public sealed class CopyViewModel : PageViewModel
     private double _speed;
     private TimeSpan _lastSpeedSample;
 
-    public CopyViewModel(MainViewModel main) : base(main, 9, "Copie", "", "Nav_Copy")
+    public CopyViewModel(MainViewModel main) : base(main, 10, "Copie", "", "Nav_Copy")
     {
         CancelCommand = new RelayCommand(RequestCancel, () => IsRunning && !IsCancelling);
         OpenBackupCommand = new RelayCommand(() => Open(_result?.BackupPath), () => _result != null);
@@ -82,6 +82,7 @@ public sealed class CopyViewModel : PageViewModel
     public bool ResultFailed => ResultKind == MarkKind.Off;
     public IReadOnlyList<ResultLine> ResultLines { get; private set; } = [];
     public IReadOnlyList<ResultLine> WifiLines { get; private set; } = [];
+    public IReadOnlyList<ResultLine> ExtraLines { get; private set; } = [];
     public double ProcessedPercent { get; private set; }
     // Key figures of the result screen (same CopyResult as the log).
     public string KpiFiles { get; private set; } = "";
@@ -145,6 +146,18 @@ public sealed class CopyViewModel : PageViewModel
             BytesText = "";
             SelectionText = "";
             Percent = 0;
+        }
+        else if (p.ExtraPhase)
+        {
+            // Printers / Outlook mailbox, after the files: progress in items of the engine, not in bytes.
+            Category = string.IsNullOrEmpty(p.Item) ? p.Category : $"{p.Category} — {p.Item}";
+            CurrentFile = IsCancelling ? "Arrêt en cours… " + p.CurrentFile : p.CurrentFile;
+            FilesText = p.ExtraTotal > 0 ? $"{Format.Count(p.ExtraDone)} / {Format.Count(p.ExtraTotal)} éléments" : "En cours…";
+            BytesText = $"Fichiers : {Format.Count(Interlocked.Read(ref p.CopiedFiles))} copiés · {Format.Size(p.CopiedBytesWithCurrent)}";
+            SelectionText = "";
+            Percent = p.ExtraTotal > 0 ? Math.Min(100, p.ExtraDone * 100.0 / p.ExtraTotal) : 100;
+            SpeedText = "";
+            RemainingText = "";
         }
         else
         {
@@ -214,7 +227,7 @@ public sealed class CopyViewModel : PageViewModel
 
         (ResultKind, ResultTitle) = r.Outcome switch
         {
-            CopyOutcome.Completed when r.ErrorCount == 0 => (MarkKind.Ok, "Sauvegarde terminée"),
+            CopyOutcome.Completed when r.ErrorCount == 0 && r.ExtrasOk => (MarkKind.Ok, "Sauvegarde terminée"),
             CopyOutcome.Completed => (MarkKind.Warn, "Sauvegarde terminée avec des avertissements"),
             CopyOutcome.Cancelled => (MarkKind.Warn, "Copie interrompue par l'utilisateur."),
             _ => (MarkKind.Off, "Copie interrompue : " + (r.FatalMessage ?? "erreur critique")),
@@ -272,6 +285,7 @@ public sealed class CopyViewModel : PageViewModel
             wifi.Add(new(MarkKind.Off, "Aucun profil Wi-Fi exporté"));
         }
         WifiLines = wifi;
+        ExtraLines = [.. ExtraResultLines.Outlook(r.Outlook, restore: false), .. ExtraResultLines.PrintersBackup(r.Printers)];
         DurationText = Format.Duration(r.Duration);
         Status = r.Outcome switch { CopyOutcome.Completed => "Terminée", CopyOutcome.Cancelled => "Interrompue", _ => "Erreur" };
         IsDone = r.Outcome == CopyOutcome.Completed;
@@ -279,7 +293,7 @@ public sealed class CopyViewModel : PageViewModel
         foreach (var name in new[]
                  {
                      nameof(IsFinished), nameof(ResultTitle), nameof(ResultSubtitle), nameof(ResultKind), nameof(ResultOk), nameof(ResultWarn),
-                     nameof(ResultFailed), nameof(ResultLines), nameof(WifiLines), nameof(DurationText), nameof(LogPath),
+                     nameof(ResultFailed), nameof(ResultLines), nameof(WifiLines), nameof(ExtraLines), nameof(DurationText), nameof(LogPath),
                      nameof(ProcessedPercent), nameof(ProcessedText), nameof(ControlText),
                      nameof(KpiFiles), nameof(KpiBytes), nameof(KpiErrors), nameof(HasErrors),
                  })

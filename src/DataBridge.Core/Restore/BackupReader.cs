@@ -166,6 +166,23 @@ public static class BackupReader
         if (m.Wallpaper is { } wp && Resolve(wp.RelativePath, "Fond d'écran", true) is { } wpFull)
             wallpaper = new BackupWallpaper(wp.RelativePath, wpFull, new FileInfo(wpFull).Length);
 
+        BackupPrinters? printers = null;
+        if (m.Printers is { } pr && Resolve(pr.File, "Imprimantes", true) is { } prFull)
+            printers = new BackupPrinters(pr.File, prFull, new FileInfo(prFull).Length, pr.Printers);
+
+        BackupMailbox? mailbox = null;
+        if (m.OutlookMailbox is { } mb)
+        {
+            var pst = mb.PstFile is { Length: > 0 } ? Resolve(mb.PstFile, "Boîte Outlook (PST)", true) : null;
+            var auto = mb.AutocompleteFile is { Length: > 0 } ? Resolve(mb.AutocompleteFile, "Autocomplétion Outlook", true) : null;
+            if (pst != null || auto != null)
+                mailbox = new BackupMailbox(mb.MailboxName, Outlook.OutlookCategoryText.FromNames(mb.Categories),
+                    pst != null ? mb.PstFile : null, pst, auto != null ? mb.AutocompleteFile : null, auto,
+                    mb.Mails, mb.Contacts, mb.Events, mb.Status);
+            if (mb.Status is "partial" or "failed")
+                warnings.Add("La boîte Outlook n'a été sauvegardée que partiellement (voir le compte rendu dans Outlook\\Boite).");
+        }
+
         if (m.Status is "cancelled") warnings.Add("Cette sauvegarde a été interrompue par l'utilisateur : elle peut être incomplète.");
         if (m.Status is "failed") warnings.Add("Cette sauvegarde s'est arrêtée sur une erreur : elle peut être incomplète.");
 
@@ -186,6 +203,8 @@ public static class BackupReader
             Browsers = browsers,
             Wifi = wifi,
             Wallpaper = wallpaper,
+            Printers = printers,
+            Mailbox = mailbox,
             Warnings = warnings,
             SecurityIssues = security,
         };

@@ -158,12 +158,50 @@ public static class BackupManifestWriter
             };
         }
 
+        string? Relative(string? path) => path != null && IO.PathUtil.IsStrictlyUnder(IO.PathUtil.Normalize(path), IO.PathUtil.Normalize(plan.BackupRoot))
+            ? IO.PathUtil.Relative(IO.PathUtil.Normalize(path), IO.PathUtil.Normalize(plan.BackupRoot))
+            : null;
+
+        if (result.Printers is { ArchivePath: { } archive } printers && Relative(archive) is { } archiveRelative)
+        {
+            m.Printers = new ManifestPrinters
+            {
+                File = archiveRelative,
+                Bytes = printers.ArchiveSize,
+                Printers = printers.Printers.Select(p => new ManifestPrinter
+                {
+                    Name = p.Name,
+                    Kind = p.Kind.ToString(),
+                    Supported = p.Support == DataBridge.Printers.Model.SupportLevel.Supported,
+                    IsDefault = p.IsDefault,
+                }).ToList(),
+            };
+        }
+
+        if (plan.Outlook is { } mailbox && result.Outlook is { } outlook && (outlook.PstPath != null || outlook.AutocompleteFile != null))
+        {
+            m.OutlookMailbox = new ManifestOutlookMailbox
+            {
+                MailboxName = mailbox.StoreName,
+                Categories = Outlook.OutlookCategoryText.ToNames(mailbox.Categories),
+                RelativePath = Outlook.OutlookBackupJob.DestinationRelative,
+                PstFile = Relative(outlook.PstPath),
+                AutocompleteFile = Relative(outlook.AutocompleteFile),
+                Mails = outlook.Mails,
+                Contacts = outlook.Contacts,
+                Events = outlook.Events,
+                Status = outlook.Cancelled ? "cancelled" : outlook.Error != null ? "failed" : outlook.Ok ? "completed" : "partial",
+            };
+        }
+
         if (m.PersonalFolders.Count > 0) m.Categories.Add("personalFolders");
         if (m.AdditionalItems.Count > 0) m.Categories.Add("additionalItems");
         if (m.OutlookSignatures != null) m.Categories.Add("outlookSignatures");
         if (m.Browsers.Count > 0) m.Categories.Add("browsers");
         if (m.Wifi.Count > 0) m.Categories.Add("wifi");
         if (m.Wallpaper != null) m.Categories.Add("wallpaper");
+        if (m.Printers != null) m.Categories.Add("printers");
+        if (m.OutlookMailbox != null) m.Categories.Add("outlookMailbox");
         return m;
     }
 

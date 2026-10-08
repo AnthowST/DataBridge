@@ -139,6 +139,10 @@ public sealed class RestorePlan
     public IReadOnlyList<WifiRestoreItem> Wifi { get; init; } = [];
     public WifiExistingPolicy WifiExisting { get; init; } = WifiExistingPolicy.Keep;
     public WallpaperRestoreItem? Wallpaper { get; init; }
+    /// <summary>Printers to restore (PrintBridge plan: only the selected, restorable printers are touched).</summary>
+    public DataBridge.Printers.Restore.RestorePlan? Printers { get; init; }
+    /// <summary>Outlook mailbox to restore into the chosen mailbox of this profile.</summary>
+    public Outlook.OutlookRestoreJob? Outlook { get; init; }
     public ConflictPolicy Policy { get; init; } = ConflictPolicy.ReplaceIfNewer;
     /// <summary>Elements deliberately not restored (log).</summary>
     public IReadOnlyList<string> NotSelected { get; init; } = [];
@@ -149,7 +153,10 @@ public sealed class RestorePlan
     public DateTime CreatedAt { get; init; } = DateTime.Now;
 
     public IEnumerable<BrowserKind> BrowserKinds => Items.Where(i => i.Browser != null).Select(i => i.Browser!.Kind).Distinct();
-    public bool IsEmpty => Items.Count == 0 && Wifi.Count == 0 && Wallpaper is null;
+    public IReadOnlyList<DataBridge.Printers.Restore.PrinterPlan> PrintersToRestore => Printers?.ToRestore.ToList() ?? [];
+    /// <summary>One UAC prompt will be shown during the restore (machine operations of the printers only).</summary>
+    public bool PrintersNeedAdmin => PrintersToRestore.Count > 0 && Printers!.NeedsAdmin;
+    public bool IsEmpty => Items.Count == 0 && Wifi.Count == 0 && Wallpaper is null && PrintersToRestore.Count == 0 && Outlook is null;
 }
 
 public enum ValidationSeverity { Blocking, Warning }

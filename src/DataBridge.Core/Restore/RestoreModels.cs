@@ -32,6 +32,10 @@ public sealed class RestoreProgress
     public int InterruptedFiles;
     public int WifiDone;
     public int WifiTotal;
+    /// <summary>Printers / Outlook phases (2.1), after the files: items processed out of the total announced by the engine.</summary>
+    public volatile bool ExtraPhase;
+    public int ExtraDone;
+    public int ExtraTotal;
 
     public long WrittenFiles => Interlocked.Read(ref RestoredFiles) + Interlocked.Read(ref ReplacedFiles);
     public int Errors => ErrorFiles + ErrorFolders;
@@ -104,9 +108,14 @@ public sealed class RestoreResult
     public List<RestoreItemResult> Items { get; } = [];
     public List<WifiRestoreResult> Wifi { get; } = [];
     public WallpaperRestoreResult? Wallpaper { get; set; }
+    /// <summary>Printers restored (2.1), null when none was selected.</summary>
+    public PrinterTransfer.PrinterRestoreResult? Printers { get; set; }
+    /// <summary>Outlook mailbox restored (2.1), null when not selected.</summary>
+    public Outlook.OutlookTransferResult? Outlook { get; set; }
     public Dictionary<IssueKind, int> IssueCounts { get; } = [];
     public int Count(IssueKind kind) => IssueCounts.TryGetValue(kind, out var n) ? n : 0;
 
     public bool HasWarnings => ErrorCount > 0 || Wifi.Any(w => w.Outcome is WifiRestoreOutcome.NotRestored or WifiRestoreOutcome.Failed)
-                               || Wallpaper is { Applied: false, ApplyRequested: true } || SkippedCount > 0 || InterruptedFiles > 0;
+                               || Wallpaper is { Applied: false, ApplyRequested: true } || SkippedCount > 0 || InterruptedFiles > 0
+                               || Printers is { Ok: false } || Outlook is { Ok: false };
 }

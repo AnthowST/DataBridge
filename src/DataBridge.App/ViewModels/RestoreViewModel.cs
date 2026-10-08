@@ -57,9 +57,10 @@ public sealed class RestoreViewModel : ObservableObject, IDisposable, IExplorerH
         Browsers = new RestoreBrowsersViewModel(this);
         Wifi = new RestoreWifiViewModel(this);
         Wallpaper = new RestoreWallpaperViewModel(this);
+        Printers = new RestorePrintersViewModel(this);
         Summary = new RestoreSummaryViewModel(this);
         Progress = new RestoreProgressViewModel(this);
-        Pages = [Source, Personal, Additional, Outlook, Browsers, Wifi, Wallpaper, Summary, Progress];
+        Pages = [Source, Personal, Additional, Outlook, Browsers, Wifi, Wallpaper, Printers, Summary, Progress];
         foreach (var p in Pages) p.IsEnabled = p == Source;
         _currentPage = Source;
 
@@ -89,6 +90,7 @@ public sealed class RestoreViewModel : ObservableObject, IDisposable, IExplorerH
     public RestoreBrowsersViewModel Browsers { get; }
     public RestoreWifiViewModel Wifi { get; }
     public RestoreWallpaperViewModel Wallpaper { get; }
+    public RestorePrintersViewModel Printers { get; }
     public RestoreSummaryViewModel Summary { get; }
     public RestoreProgressViewModel Progress { get; }
     public ObservableCollection<WizardPage> Pages { get; }
@@ -206,6 +208,7 @@ public sealed class RestoreViewModel : ObservableObject, IDisposable, IExplorerH
         Browsers.Load();
         Wifi.Load();
         Wallpaper.Load();
+        Printers.Load();
         foreach (var p in Pages) p.IsEnabled = p != Progress;
         Source.MarkUsed();
         OnPropertyChanged(nameof(HasBackup));
@@ -373,6 +376,7 @@ public sealed class RestoreViewModel : ObservableObject, IDisposable, IExplorerH
     {
         _timer.Stop();
         _analysisCts?.Cancel();
+        Printers.DisposeSource();
         Scanner.Dispose();
     }
 

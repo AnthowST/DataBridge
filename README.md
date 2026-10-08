@@ -5,7 +5,7 @@
 DataBridge est un utilitaire Windows permettant de sauvegarder et restaurer les principales données d'un profil
 utilisateur.
 
-Current version: **2.0.1**
+Current version: **2.1.0**
 
 | Fonction | Statut |
 |---|---|
@@ -18,6 +18,8 @@ Current version: **2.0.1**
 - Sélection fichier par fichier
 - Prise en charge des Known Folders et de OneDrive
 - Signatures Outlook classique
+- Boîte aux lettres Outlook (mails, calendrier, contacts, autocomplétion) exportée dans un PST et restaurée dans la boîte choisie
+- Imprimantes (file, port TCP/IP, pilote, réglages) — format `.prnbak` de PrintBridge
 - Profils Chrome, Edge et Firefox
 - Profils Wi-Fi
 - Fond d'écran
@@ -25,14 +27,16 @@ Current version: **2.0.1**
 - Gestion des conflits
 - Sauvegardes DataBridge 2.0 avec manifest (`databridge-manifest.json`)
 - Compatibilité avec les sauvegardes DataBridge 1.x
-- Fonctionnement sans élévation administrateur
+- Fonctionnement sans élévation administrateur (seule exception : la restauration des imprimantes, une invite UAC si nécessaire)
 
 ## Système
 
 - Windows 10 / Windows 11
 - Exécutable autonome `DataBridge.exe` (aucun .NET à installer), téléchargeable depuis les
   [Releases](https://github.com/AnthowST/DataBridge/releases)
-- Fonctionne avec les droits de la session utilisateur (manifeste `asInvoker`) : aucune élévation, aucune invite UAC
+- Fonctionne avec les droits de la session utilisateur (manifeste `asInvoker`). Seule exception : restaurer une imprimante
+  qui demande un pilote, un port TCP/IP ou une file d'impression déclenche **une** invite UAC (voir « Imprimantes »)
+- Outlook : Outlook classique ouvert (le nouvel Outlook n'est pas pris en charge)
 
 Au lancement, DataBridge propose **Sauvegarder ce profil** ou **Restaurer un profil** (restauration d'une sauvegarde
 DataBridge vers la session Windows actuelle). On revient à ce choix par « Accueil DataBridge » (en-tête) tant qu'aucune
@@ -44,13 +48,30 @@ Les mots de passe, cookies, sessions et certaines données protégées des navig
 et ne sont pas garantis lors d'une restauration sur un autre PC. DataBridge n'extrait aucun mot de passe et ne promet
 pas leur restauration.
 
+## Outlook et imprimantes (2.1)
+
+- **Boîte aux lettres Outlook** : moteur repris de *Sauvegarde Outlook* (COM tardif sur un thread STA dédié). Étape
+  « 4. Outlook » : « Analyser Outlook » (rien n'est lu avant ce clic), choix de la boîte, quatre catégories (mails,
+  calendrier, contacts, autocomplétion) dont **tout** le contenu est copié. Sauvegarde : la boîte n'est que lue, chaque
+  élément passe par un `.msg` temporaire vers un nouveau PST (`Outlook\Boite`), retiré du profil ensuite ; autocomplétion
+  copiée à part (`.bin` + `.csv`). Restauration : copie de travail du PST, boîte de destination toujours choisie
+  explicitement, ajout uniquement (fusion avec les dossiers spéciaux ou dossier « Restauration <date> »), doublons
+  ignorés, aucun envoi ; l'autocomplétion devient des contacts, et remplace le cache seulement sur demande.
+- **Imprimantes** : moteur repris de *PrintBridge* (`src/DataBridge.Printers`, même format d'archive `.prnbak`). Étape
+  « 8. Imprimantes » : export en lecture seule avec les droits de la session (`Imprimantes\Imprimantes.prnbak`). À la
+  restauration, l'archive est vérifiée (empreintes) et ce PC analysé sans rien modifier ; une imprimante déjà présente
+  sous le même nom n'est jamais modifiée. Les opérations du profil (connexions partagées, préférences, imprimante par
+  défaut) restent dans DataBridge ; les opérations machine (pilote, port, file) passent par **une** instance élevée
+  `DataBridge.exe --printer-worker` (invite UAC, liste fermée d'opérations, canal nommé à ACL restreinte, PID vérifié),
+  uniquement si une imprimante cochée en a besoin. Aucune page de test n'est imprimée.
+
 ## Stack
 
 - C#, WPF, .NET 10 ; aucune dépendance NuGet dans l'application
 - P/Invoke Win32 : `SHGetKnownFolderPath`, `FindFirstFileExW`, `CopyFileExW`, `GetDiskFreeSpaceExW`,
   `IOCTL_STORAGE_QUERY_PROPERTY`, API WLAN (`wlanapi.dll`), `GetTokenInformation`, `GetFinalPathNameByHandleW`
 - Icônes : Segoe Fluent Icons (repli Segoe MDL2 Assets) + icônes Explorateur par type de fichier
-- Tests : xUnit (cœur), UI Automation via PowerShell 5.1 (fenêtre réelle)
+- Tests : xUnit (cœur, imprimantes), UI Automation via PowerShell 5.1 (fenêtre réelle)
 
 ## Commandes
 
@@ -97,6 +118,9 @@ d'écran) et compare avant / après les positions UI Automation et les pixels de
 powershell -NoProfile -ExecutionPolicy Bypass -File tools/ui-test/Run-V132-Layout.ps1
 ```
 
+Outlook et imprimantes (2.1) : `Run-V21.ps1` (build Debug) fait une sauvegarde de test avec export des imprimantes
+(lecture seule), puis ouvre la restauration jusqu'au résumé **sans la lancer** ; Outlook n'est jamais interrogé.
+
 ## Structure
 
 ```
@@ -110,10 +134,14 @@ src/DataBridge.Core/            logique, sans WPF
   Detection/                     VolumeService, BrowserDetector, BrowserProcessService, FirefoxProfiles, WifiService…
   Copy/                          CopyPlan + BackupNaming, PlanCalculator, CopyEngine, CopyModels, DestinationGuard
   Logging/CopyLogWriter.cs       copy-log.txt
+  Outlook/                       moteur Outlook (repris de Sauvegarde Outlook), OutlookSession (thread STA), OutlookTransfer
+  PrinterTransfer/               export / restauration des imprimantes pour DataBridge (moteur DataBridge.Printers)
   Restore/                       restauration (2.0) : BackupManifest (+ BackupManifestWriter), BackupReader (manifest / 1.x),
                                  RestoreTarget, RestoreSelection, RestorePlanner (plan, validation, analyse), RestoreWalker,
                                  RestoreEngine, RestorePaths (sécurité des chemins), BrowserRestoreService,
                                  WifiRestoreService, WallpaperRestoreService, RestoreLogWriter
+src/DataBridge.Printers/        moteur d'imprimantes repris de PrintBridge (inventaire, export .prnbak, analyse, restauration,
+                                 worker élevé à liste fermée d'opérations)
 src/DataBridge.App/             WPF (assembly « DataBridge » → DataBridge.exe)
   Assets/Branding/               logo officiel databrige-logo.png (ressource WPF embarquée)
   Assets/Branding/databridge-icon.ico  icône officielle (16 à 256 px) : exe, fenêtres, barre des tâches, Alt+Tab
@@ -123,9 +151,9 @@ src/DataBridge.App/             WPF (assembly « DataBridge » → DataBridge.ex
   ViewModels/, Views/            ShellViewModel (accueil Sauvegarder / Restaurer), MainViewModel (assistant de sauvegarde),
                                  RestoreViewModel + Restore*ViewModel (assistant de restauration), WizardView (barre
                                  latérale + pied communs), DataBridgeDialog (modale unique)
-tests/DataBridge.Tests/         tests unitaires du cœur
+tests/DataBridge.Tests/         tests unitaires du cœur et des imprimantes
 tools/ui-test/                   UiTest.psm1 (UI Automation, captures, jeton), scénarios Run-*.ps1
-docs/screenshots/databridge-2.0.0/ captures de la fenêtre réelle (2.0.0)
+docs/screenshots/databridge-2.0.0/ captures de la fenêtre réelle (2.0.0) ; databridge-2.1.0/ (Outlook, imprimantes)
 ```
 
 ## Identité visuelle
@@ -203,9 +231,11 @@ DataBridge_<PC>_<Session>_<AAAA-MM-JJ>_<HH-mm>\
 ├── Personal\ (Desktop, Documents, Downloads, Pictures, Videos, Music)
 ├── Additional\            éléments ajoutés (origine dans copy-log.txt)
 ├── Outlook\Signatures\
+├── Outlook\Boite\         (2.1) Sauvegarde_Outlook_<date>.pst, Autocompletion_<date>.bin / .csv, compte rendu
 ├── Browsers\ (Chrome\User Data, Edge\User Data, Firefox)
 ├── Network\WiFi\          Wi-Fi-<profil>.xml
 ├── Windows\Wallpaper\TranscodedWallpaper
+├── Imprimantes\Imprimantes.prnbak   (2.1) archive des imprimantes (format PrintBridge)
 ├── copy-log.txt
 └── databridge-manifest.json   (2.0) description structurée, sans mot de passe, clé, jeton ni cookie
 ```
@@ -216,6 +246,6 @@ pas seulement sur le nom du dossier.
 
 ## Hors périmètre de cette version
 
-Transfert PC→PC direct, restauration à distance, compte / cloud DataBridge, assistant de migration, PST/OST, profils Outlook, imprimantes,
+Transfert PC→PC direct, restauration à distance, compte / cloud DataBridge, assistant de migration, OST et profils Outlook,
 comptes Microsoft 365, export de mots de passe, applications, licences, registre, compression, chiffrement, cloud,
-serveur, installateur, mise à jour automatique, mode administrateur.
+serveur, installateur, mise à jour automatique, mode administrateur (hors restauration des imprimantes), page de test.

@@ -81,6 +81,22 @@ public sealed class RestoreBrowserChoice
     public BrowserTargetOption? Target { get; set; }
 }
 
+/// <summary>The Outlook mailbox of the backup (2.1) and the mailbox of this Outlook profile it is restored into.</summary>
+public sealed class RestoreMailboxChoice(BackupMailbox source)
+{
+    public BackupMailbox Source { get; } = source;
+    /// <summary>Checked categories (everything of each category is restored).</summary>
+    public Outlook.OutlookCategories Selected { get; set; } = source.Available;
+    /// <summary>Target mailbox, always chosen explicitly (never guessed).</summary>
+    public string? TargetStoreId { get; set; }
+    public string? TargetName { get; set; }
+    /// <summary>False (default): merge into the matching folders (Inbox, Sent, Calendar...). True: a "Restauration &lt;date&gt;" folder.</summary>
+    public bool IntoNewFolder { get; set; }
+    /// <summary>Also replace the autocomplete cache of the target (its current cache is copied first). Not guaranteed by Outlook.</summary>
+    public bool ReplaceAutocompleteCache { get; set; }
+    public bool Include => (Selected & Source.Available) != Outlook.OutlookCategories.None;
+}
+
 /// <summary>
 /// Everything the technician chose for the restore, independent from the UI. <see cref="RestorePlanner.BuildPlan"/> turns
 /// it into the exact plan executed by the engine and shown in the summary.
@@ -99,6 +115,10 @@ public sealed class RestoreSelection
     public WifiEnvironment? WifiState { get; set; }
     public bool IncludeWallpaper { get; set; }
     public ConflictPolicy Policy { get; set; } = ConflictPolicy.ReplaceIfNewer;
+    /// <summary>Outlook mailbox of the backup (null when the backup has none).</summary>
+    public RestoreMailboxChoice? Mailbox { get; set; }
+    /// <summary>Printers archive of the backup, checked and analysed against this PC (null until the analysis is done).</summary>
+    public PrinterTransfer.PrinterRestoreSource? Printers { get; set; }
 
     /// <summary>Default choices: everything present in the backup is selected; destinations come from this session.</summary>
     public static RestoreSelection Create(BackupContent backup, RestoreTarget target)
@@ -122,6 +142,7 @@ public sealed class RestoreSelection
         }
         foreach (var w in backup.Wifi) s.SelectedWifi.Add(w.RelativePath);
         s.IncludeWallpaper = backup.Wallpaper != null;
+        if (backup.Mailbox != null) s.Mailbox = new RestoreMailboxChoice(backup.Mailbox);
         return s;
     }
 

@@ -69,6 +69,8 @@ public sealed class RestoreLogWriter
             WriteItems(log, plan, result);
             WriteWifi(log, plan, result);
             WriteWallpaper(log, plan, result);
+            WritePrinters(log, plan, result);
+            WriteOutlook(log, plan, result);
             WriteSection(log, "ERREURS", "errors", result.ErrorCount);
             WriteSection(log, "FICHIERS REMPLACÉS", "replaced", (int)result.ReplacedFiles);
             WriteSection(log, "FICHIERS EXISTANTS CONSERVÉS", "kept", result.KeptFiles);
@@ -257,6 +259,49 @@ public sealed class RestoreLogWriter
             if (w.PreviousWallpaper is { Length: > 0 } p) log.WriteLine($"Précédent   : {p}");
         }
         else log.WriteLine("Résultat    : non traité");
+    }
+
+    private static void WritePrinters(StreamWriter log, RestorePlan plan, RestoreResult result)
+    {
+        Title(log, "IMPRIMANTES");
+        if (plan.PrintersToRestore.Count == 0)
+        {
+            log.WriteLine(plan.Backup.Printers is null ? "Aucune imprimante dans la sauvegarde." : "Aucune imprimante sélectionnée.");
+            return;
+        }
+        log.WriteLine("Sélection : " + string.Join(", ", plan.PrintersToRestore.Select(p => p.TargetName)));
+        log.WriteLine(plan.PrintersNeedAdmin
+            ? "Droits administrateur demandés une seule fois (pilote, port, file) ; les opérations du profil restent sous la session."
+            : "Aucune opération administrateur nécessaire.");
+        if (result.Printers is not { } r)
+        {
+            log.WriteLine("Non traité (restauration arrêtée avant cette étape).");
+            return;
+        }
+        if (r.Error != null) log.WriteLine("ERREUR : " + r.Error);
+        if (r.ReportText is { Length: > 0 } text)
+            foreach (var line in text.Replace("\r\n", "\n").Split('\n')) log.WriteLine(line);
+        if (r.JournalPath != null) log.WriteLine($"Journal des modifications d'imprimantes : {r.JournalPath}");
+        log.WriteLine("Aucune page de test n'est imprimée par DataBridge.");
+    }
+
+    private static void WriteOutlook(StreamWriter log, RestorePlan plan, RestoreResult result)
+    {
+        Title(log, "OUTLOOK — BOÎTE AUX LETTRES");
+        if (plan.Outlook is null)
+        {
+            log.WriteLine(plan.Backup.Mailbox is null ? "Aucune boîte Outlook dans la sauvegarde." : "Non restaurée (non sélectionnée).");
+            return;
+        }
+        log.WriteLine($"Sauvegarde       : {plan.Backup.Mailbox?.MailboxName}");
+        log.WriteLine($"Mode             : {(plan.Outlook.IntoNewFolder ? "dossier « Restauration <date> »" : "fusion dans les dossiers existants")}, doublons ignorés");
+        if (result.Outlook is not { } r)
+        {
+            log.WriteLine("Non traité (restauration arrêtée avant cette étape).");
+            return;
+        }
+        foreach (var line in r.LogLines()) log.WriteLine(line);
+        log.WriteLine("Ajout uniquement : rien n'est supprimé ni modifié dans la boîte de destination, aucun mail n'est envoyé.");
     }
 
     private void WriteSection(StreamWriter log, string title, string section, int count)

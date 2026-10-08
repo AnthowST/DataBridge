@@ -84,6 +84,10 @@ public sealed class CopyProgress
     public int Duplicates;
     public int WifiDone;
     public int WifiTotal;
+    /// <summary>Printers / Outlook phases (2.1), after the files: items processed out of the total announced by the engine.</summary>
+    public volatile bool ExtraPhase;
+    public int ExtraDone;
+    public int ExtraTotal;
 
     public int Errors => ErrorFiles + ErrorFolders;
     public long ProcessedFiles => Interlocked.Read(ref CopiedFiles) + ErrorFiles + InterruptedFiles;
@@ -167,9 +171,15 @@ public sealed class CopyResult
     public DateTime StartedAt { get; init; }
     public List<JobResult> Jobs { get; } = [];
     public List<WifiExportResult> Wifi { get; } = [];
+    /// <summary>Printers exported (2.1), null when none was selected.</summary>
+    public PrinterTransfer.PrinterBackupResult? Printers { get; set; }
+    /// <summary>Outlook mailbox exported to a PST (2.1), null when none was chosen.</summary>
+    public Outlook.OutlookTransferResult? Outlook { get; set; }
     public Dictionary<IssueKind, int> IssueCounts { get; } = [];
 
     public int Count(IssueKind kind) => IssueCounts.TryGetValue(kind, out var n) ? n : 0;
+    /// <summary>Printers and mailbox exported without problem (true when they were not requested).</summary>
+    public bool ExtrasOk => (Printers?.Ok ?? true) && (Outlook?.Ok ?? true);
 
     public int WifiExported => Wifi.Count(w => w.Exported);
     public int WifiKeysIncluded => Wifi.Count(w => w.KeyIncluded);

@@ -13,6 +13,7 @@ public static class Categories
     public const string Browsers = "Navigateurs";
     public const string Windows = "Windows";
     public const string Network = "Réseau";
+    public const string Printers = "Imprimantes";
 }
 
 /// <summary>
@@ -46,6 +47,10 @@ public sealed class CopyPlan
     public required string BackupFolderName { get; init; }
     public required IReadOnlyList<CopyJob> Jobs { get; init; }
     public WifiJob? Wifi { get; init; }
+    /// <summary>Printers exported to Imprimantes\Imprimantes.prnbak after the files (2.1).</summary>
+    public PrinterTransfer.PrinterBackupJob? Printers { get; init; }
+    /// <summary>Outlook mailbox exported to a new PST in Outlook\Boite after the files (2.1).</summary>
+    public Outlook.OutlookBackupJob? Outlook { get; init; }
     public bool SkipCloudOnly { get; init; } = true;
     /// <summary>Lines describing what was deliberately not selected (for the log).</summary>
     public IReadOnlyList<string> NotSelected { get; init; } = [];

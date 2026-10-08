@@ -9,7 +9,8 @@
     <!-- Produces "DataBridge.exe". -->
     <AssemblyName>DataBridge</AssemblyName>
     <RootNamespace>DataBridge.App</RootNamespace>
-    <!-- asInvoker: never requests elevation, never shows a UAC prompt. -->
+    <!-- asInvoker: DataBridge always starts with the session rights. Only the printer restore (2.1) may start ONE elevated
+         worker instance (printer-worker switch, UAC prompt) for the machine operations of the selected printers. -->
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <Product>DataBridge</Product>
     <AssemblyTitle>DataBridge</AssemblyTitle>
@@ -17,8 +18,8 @@
     <Description>Copiez, sauvegardez et restaurez vos données</Description>
     <Company>DataBridge</Company>
     <Copyright>DataBridge</Copyright>
-    <Version>2.0.1</Version>
-    <!-- ProductVersion stays "2.0.1" (no "+<commit>" suffix added by the SDK in a git repository). -->
+    <Version>2.1.0</Version>
+    <!-- ProductVersion stays the plain version (no "+<commit>" suffix added by the SDK in a git repository). -->
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <NoWarn>$(NoWarn);CA1416</NoWarn>
   </PropertyGroup>
