@@ -23,7 +23,7 @@ public sealed class OutlookViewModel : PageViewModel
 
     public OutlookViewModel(MainViewModel main) : base(main, 4, "Outlook", "", "Nav_Outlook")
     {
-        AnalyzeCommand = new RelayCommand(Analyze, () => !IsBusy);
+        AnalyzeCommand = new RelayCommand(Analyze, () => !IsBusy && IncludeMailbox);
         UpdateSidebar();
     }
 
@@ -33,7 +33,7 @@ public sealed class OutlookViewModel : PageViewModel
     private StoreEntry? _selectedStore;
     private StoreContent? _content;
     private bool _isBusy;
-    private bool _includeMailbox;
+    private bool _includeMailbox = true;
     private string _mailboxMessage = "";
     private OutlookCategories _categories = OutlookCategories.All;
     private CancellationTokenSource? _loadCts;
@@ -65,24 +65,25 @@ public sealed class OutlookViewModel : PageViewModel
             foreach (var o in StoreOptions) o.Refresh();
             _content = null;
             NotifyCounts();
-            if (value != null)
-            {
-                _includeMailbox = true;
-                OnPropertyChanged(nameof(IncludeMailbox));
-                LoadCounts(value);
-            }
+            if (value != null && _includeMailbox) LoadCounts(value);
             ApplyMailbox();
         }
     }
 
-    /// <summary>Export the chosen mailbox to a PST (everything of the checked categories).</summary>
+    /// <summary>
+    /// Main switch of the mailbox card (checked by default): unchecked, no mailbox is exported and Outlook is not read
+    /// (the counts being read are cancelled). Checked again, the mailboxes are listed / counted as on the first visit.
+    /// </summary>
     public bool IncludeMailbox
     {
-        get => _includeMailbox && _selectedStore != null;
+        get => _includeMailbox;
         set
         {
-            _includeMailbox = value;
-            OnPropertyChanged();
+            if (!Set(ref _includeMailbox, value)) return;
+            CommandManager.InvalidateRequerySuggested();
+            if (!value) _loadCts?.Cancel();
+            else if (!_analyzedOnce) OnActivated();
+            else if (_selectedStore is { } store && _content is null) LoadCounts(store);
             ApplyMailbox();
         }
     }
@@ -124,7 +125,7 @@ public sealed class OutlookViewModel : PageViewModel
     /// <summary>The mailboxes are listed automatically when the page is shown, if classic Outlook is open.</summary>
     public override void OnActivated()
     {
-        if (_analyzedOnce || IsBusy || TestNoOutlook) return;
+        if (!_includeMailbox || _analyzedOnce || IsBusy || TestNoOutlook) return;
         if (!OutlookSession.IsOutlookRunning())
         {
             MailboxMessage = "Outlook classique n'est pas ouvert : ouvrez-le, puis cliquez sur « Analyser Outlook ».";
@@ -200,13 +201,13 @@ public sealed class OutlookViewModel : PageViewModel
 
     private void NotifyCounts()
     {
-        foreach (var n in new[] { nameof(MailsText), nameof(CalendarText), nameof(ContactsText), nameof(AutocompleteText), nameof(HasContent), nameof(IncludeMailbox) })
+        foreach (var n in new[] { nameof(MailsText), nameof(CalendarText), nameof(ContactsText), nameof(AutocompleteText), nameof(HasContent) })
             OnPropertyChanged(n);
     }
 
     private void ApplyMailbox()
     {
-        Main.Selection.OutlookMailbox = IncludeMailbox && _categories != OutlookCategories.None
+        Main.Selection.OutlookMailbox = _includeMailbox && _selectedStore != null && _categories != OutlookCategories.None
             ? new OutlookBackupJob(_selectedStore!.StoreId, string.IsNullOrWhiteSpace(_selectedStore.DisplayName) ? _selectedStore.Description : _selectedStore.DisplayName, _categories)
             : null;
         UpdateSidebar();

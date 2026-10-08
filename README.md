@@ -5,7 +5,7 @@
 DataBridge est un utilitaire Windows permettant de sauvegarder et restaurer les principales données d'un profil
 utilisateur.
 
-Current version: **2.1.1**
+Current version: **2.1.2**
 
 | Fonction | Statut |
 |---|---|
@@ -53,7 +53,8 @@ pas leur restauration.
 ## Outlook et imprimantes (2.1)
 
 - **Boîte aux lettres Outlook** : moteur repris de *Sauvegarde Outlook* (COM tardif sur un thread STA dédié). Étape
-  « 4. Outlook » : les boîtes du profil sont listées automatiquement (boîte par défaut présélectionnée ; un fichier de
+  « 4. Outlook » : case « Boîte aux lettres » cochée par défaut (décochée : aucune boîte exportée, Outlook n'est pas
+  lu) ; les boîtes du profil sont listées automatiquement (boîte par défaut présélectionnée ; un fichier de
   données introuvable, PST déplacé ou supprimé, est ignoré et signalé sans toucher au profil), quatre catégories (mails,
   calendrier, contacts, autocomplétion) dont **tout** le contenu est copié. Sauvegarde : la boîte n'est que lue, chaque
   élément passe par un `.msg` temporaire vers un nouveau PST (`Outlook\Boite`), retiré du profil ensuite ; autocomplétion
