@@ -138,6 +138,12 @@ public sealed class RestorePlan
     public required IReadOnlyList<RestoreItem> Items { get; init; }
     public IReadOnlyList<WifiRestoreItem> Wifi { get; init; } = [];
     public WifiExistingPolicy WifiExisting { get; init; } = WifiExistingPolicy.Keep;
+    /// <summary>Network drives to reconnect (2.2), with the session rights.</summary>
+    public IReadOnlyList<BackupNetworkDrive> NetworkDrives { get; init; } = [];
+    /// <summary>When a share asks for a password, Windows asks for it (owned by <see cref="OwnerWindow"/>).</summary>
+    public bool AskNetworkPassword { get; init; } = true;
+    /// <summary>Main window handle, owner of Windows' credential prompt for the network drives (set by the UI at launch).</summary>
+    public IntPtr OwnerWindow { get; set; }
     public WallpaperRestoreItem? Wallpaper { get; init; }
     /// <summary>Printers to restore (PrintBridge plan: only the selected, restorable printers are touched).</summary>
     public DataBridge.Printers.Restore.RestorePlan? Printers { get; init; }
@@ -156,7 +162,7 @@ public sealed class RestorePlan
     public IReadOnlyList<DataBridge.Printers.Restore.PrinterPlan> PrintersToRestore => Printers?.ToRestore.ToList() ?? [];
     /// <summary>One UAC prompt will be shown during the restore (machine operations of the printers only).</summary>
     public bool PrintersNeedAdmin => PrintersToRestore.Count > 0 && Printers!.NeedsAdmin;
-    public bool IsEmpty => Items.Count == 0 && Wifi.Count == 0 && Wallpaper is null && PrintersToRestore.Count == 0 && Outlook is null;
+    public bool IsEmpty => Items.Count == 0 && Wifi.Count == 0 && NetworkDrives.Count == 0 && Wallpaper is null && PrintersToRestore.Count == 0 && Outlook is null;
 }
 
 public enum ValidationSeverity { Blocking, Warning }

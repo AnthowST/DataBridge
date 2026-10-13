@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="clr-namespace:DataBridge.App.ViewModels">
     <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Margin="28,24,28,24">
+        <StackPanel Margin="24,14,24,18">
             <DockPanel>
                 <Button DockPanel.Dock="Right" Command="{Binding RefreshCommand}" Style="{StaticResource GhostButton}" VerticalAlignment="Top"
                         AutomationProperties.AutomationId="RefreshBrowsersButton" AutomationProperties.Name="Actualiser">
@@ -13,14 +13,14 @@
                     </StackPanel>
                 </Button>
                 <StackPanel>
-                    <TextBlock Text="5. Navigateurs" Style="{StaticResource PageTitle}" />
+                    <TextBlock Text="Navigateurs" Style="{StaticResource PageTitle}" />
                     <TextBlock Style="{StaticResource PageSubtitle}"
                                Text="Copie du dossier « User Data » complet de Chrome et Edge (profils sélectionnés et données communes du navigateur) et des profils Firefox de la session. Les caches sont exclus." />
                 </StackPanel>
             </DockPanel>
 
             <!-- Passwords warning (always visible) -->
-            <Border Style="{StaticResource Banner}" Margin="0,16,0,0" AutomationProperties.AutomationId="PasswordWarning">
+            <Border Style="{StaticResource Banner}" Margin="0,12,0,0" AutomationProperties.AutomationId="PasswordWarning">
                 <DockPanel>
                     <TextBlock Style="{StaticResource Icon}" Text="&#xE72E;" FontSize="16" Foreground="{StaticResource Warning}" VerticalAlignment="Top" Margin="0,1,12,0" />
                     <StackPanel>
@@ -33,7 +33,7 @@
                 </DockPanel>
             </Border>
 
-            <ItemsControl ItemsSource="{Binding Cards}" Margin="0,14,0,0">
+            <ItemsControl ItemsSource="{Binding Cards}" Margin="0,10,0,0">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="{x:Type vm:BrowserCardViewModel}">
                         <Border Style="{StaticResource Card}" Margin="0,0,0,12" AutomationProperties.AutomationId="{Binding AutomationId}" AutomationProperties.Name="{Binding Name}">

@@ -54,7 +54,7 @@ public sealed class PersonalViewModel : WizardPage
     }
 
     public IReadOnlyList<PersonalRootViewModel> Roots { get; }
-    public string PageTitle => $"{Number}. {Title}";
+    public string PageTitle => Title;
     public string Subtitle { get; }
     public bool IsRestore { get; }
 

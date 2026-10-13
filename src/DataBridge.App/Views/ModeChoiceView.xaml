@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="DataBridge.App.Views.ModeChoiceView"
+<UserControl x:Class="DataBridge.App.Views.ModeChoiceView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:infra="clr-namespace:DataBridge.App.Infrastructure"
@@ -15,9 +15,9 @@
         </Style>
         <!-- Large icon of a mode: arrow leaving the PC (backup) or coming back to it (restore). -->
         <Style x:Key="ModeIcon" TargetType="Border">
-            <Setter Property="Width" Value="64" />
-            <Setter Property="Height" Value="64" />
-            <Setter Property="CornerRadius" Value="16" />
+            <Setter Property="Width" Value="48" />
+            <Setter Property="Height" Value="48" />
+            <Setter Property="CornerRadius" Value="12" />
             <Setter Property="HorizontalAlignment" Value="Left" />
         </Style>
         <Style x:Key="ModeCard" TargetType="Border" BasedOn="{StaticResource Card}">
@@ -27,24 +27,24 @@
 
     <Grid Background="{StaticResource BackgroundSecondary}">
         <ScrollViewer VerticalScrollBarVisibility="Auto">
-            <StackPanel MaxWidth="940" Margin="32,36,32,28" VerticalAlignment="Center">
+            <StackPanel MaxWidth="900" Margin="32,22,32,16" VerticalAlignment="Top">
                 <!-- Small symbol + question (the full logo stays in the header) -->
                 <StackPanel HorizontalAlignment="Center">
                     <Image Source="{x:Static infra:BrandAssets.Symbol}" Width="40" Height="40" HorizontalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality"
                            Visibility="{Binding Source={x:Static infra:BrandAssets.Symbol}, Converter={StaticResource Visible}}" />
                     <TextBlock Text="Que voulez-vous faire ?" FontSize="26" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}" HorizontalAlignment="Center"
-                               Margin="0,12,0,0" AutomationProperties.AutomationId="ModeChoiceTitle" />
+                               Margin="0,8,0,0" AutomationProperties.AutomationId="ModeChoiceTitle" />
                     <TextBlock Text="Choisissez une opération. Rien n'est copié ni restauré avant votre validation." FontSize="14" Foreground="{StaticResource TextSecondary}"
-                               HorizontalAlignment="Center" Margin="0,6,0,0" />
+                               HorizontalAlignment="Center" Margin="0,4,0,0" />
                 </StackPanel>
 
-                <UniformGrid Columns="2" Margin="0,28,0,0">
+                <UniformGrid Columns="2" Margin="0,18,0,0">
                     <!-- ===================================== Backup -->
                     <Border Style="{StaticResource ModeCard}" Margin="0,0,10,0" AutomationProperties.AutomationId="ModeBackupCard">
                         <Grid>
                             <Border Height="3" VerticalAlignment="Top" Background="{StaticResource BrandGradient}" CornerRadius="10,10,0,0" />
-                            <DockPanel Margin="28,30,28,26">
-                                <StackPanel DockPanel.Dock="Bottom" Margin="0,22,0,0">
+                            <DockPanel Margin="24,18,24,18">
+                                <StackPanel DockPanel.Dock="Bottom" Margin="0,14,0,0">
                                     <Button Command="{Binding BackupCommand}" Style="{StaticResource PrimaryButton}" HorizontalAlignment="Left" Padding="20,10"
                                             AutomationProperties.AutomationId="ModeBackupButton" AutomationProperties.Name="Commencer une sauvegarde">
                                         <StackPanel Orientation="Horizontal">
@@ -58,16 +58,16 @@
                                 <StackPanel>
                                     <Border Style="{StaticResource ModeIcon}" Background="{StaticResource SelectionAccentSoft}">
                                         <Grid>
-                                            <TextBlock Style="{StaticResource Icon}" Text="&#xE977;" FontSize="26" Foreground="{StaticResource TextStrong}" Margin="0,0,10,8" />
-                                            <Border Width="26" Height="26" CornerRadius="13" Background="{StaticResource SelectionAccent}" HorizontalAlignment="Right"
-                                                    VerticalAlignment="Bottom" Margin="0,0,6,6">
-                                                <TextBlock Style="{StaticResource Icon}" Text="&#xE898;" FontSize="13" Foreground="{StaticResource TextOnAccent}" />
+                                            <TextBlock Style="{StaticResource Icon}" Text="&#xE977;" FontSize="20" Foreground="{StaticResource TextStrong}" Margin="0,0,8,6" />
+                                            <Border Width="20" Height="20" CornerRadius="10" Background="{StaticResource SelectionAccent}" HorizontalAlignment="Right"
+                                                    VerticalAlignment="Bottom" Margin="0,0,4,4">
+                                                <TextBlock Style="{StaticResource Icon}" Text="&#xE898;" FontSize="11" Foreground="{StaticResource TextOnAccent}" />
                                             </Border>
                                         </Grid>
                                     </Border>
-                                    <TextBlock Text="Sauvegarder ce profil" FontSize="20" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}" Margin="0,18,0,0"
+                                    <TextBlock Text="Sauvegarder ce profil" FontSize="20" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}" Margin="0,12,0,0"
                                                AutomationProperties.AutomationId="ModeBackupTitle" />
-                                    <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TextSecondary}" FontSize="13.5" Margin="0,8,0,0" LineHeight="20"
+                                    <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TextSecondary}" FontSize="13.5" Margin="0,4,0,0" LineHeight="19"
                                                Text="Copiez les données de la session Windows actuelle vers un disque, une clé USB ou un dossier de votre choix." />
                                 </StackPanel>
                             </DockPanel>
@@ -85,8 +85,8 @@
                                     </LinearGradientBrush>
                                 </Border.Background>
                             </Border>
-                            <DockPanel Margin="28,30,28,26">
-                                <StackPanel DockPanel.Dock="Bottom" Margin="0,22,0,0">
+                            <DockPanel Margin="24,18,24,18">
+                                <StackPanel DockPanel.Dock="Bottom" Margin="0,14,0,0">
                                     <Button Command="{Binding RestoreCommand}" Style="{StaticResource PrimaryButton}" HorizontalAlignment="Left" Padding="20,10"
                                             AutomationProperties.AutomationId="ModeRestoreButton" AutomationProperties.Name="Restaurer une sauvegarde">
                                         <StackPanel Orientation="Horizontal">
@@ -100,16 +100,16 @@
                                 <StackPanel>
                                     <Border Style="{StaticResource ModeIcon}" Background="{StaticResource TealSoft}">
                                         <Grid>
-                                            <TextBlock Style="{StaticResource Icon}" Text="&#xE977;" FontSize="26" Foreground="{StaticResource TextStrong}" Margin="0,0,10,8" />
-                                            <Border Width="26" Height="26" CornerRadius="13" Background="{StaticResource TealText}" HorizontalAlignment="Right"
-                                                    VerticalAlignment="Bottom" Margin="0,0,6,6">
-                                                <TextBlock Style="{StaticResource Icon}" Text="&#xE896;" FontSize="13" Foreground="{StaticResource TextOnAccent}" />
+                                            <TextBlock Style="{StaticResource Icon}" Text="&#xE977;" FontSize="20" Foreground="{StaticResource TextStrong}" Margin="0,0,8,6" />
+                                            <Border Width="20" Height="20" CornerRadius="10" Background="{StaticResource TealText}" HorizontalAlignment="Right"
+                                                    VerticalAlignment="Bottom" Margin="0,0,4,4">
+                                                <TextBlock Style="{StaticResource Icon}" Text="&#xE896;" FontSize="11" Foreground="{StaticResource TextOnAccent}" />
                                             </Border>
                                         </Grid>
                                     </Border>
-                                    <TextBlock Text="Restaurer un profil" FontSize="20" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}" Margin="0,18,0,0"
+                                    <TextBlock Text="Restaurer un profil" FontSize="20" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}" Margin="0,12,0,0"
                                                AutomationProperties.AutomationId="ModeRestoreTitle" />
-                                    <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TextSecondary}" FontSize="13.5" Margin="0,8,0,0" LineHeight="20"
+                                    <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TextSecondary}" FontSize="13.5" Margin="0,4,0,0" LineHeight="19"
                                                Text="Restaurez les données d'une sauvegarde DataBridge vers la session Windows actuelle." />
                                 </StackPanel>
                             </DockPanel>
@@ -117,7 +117,7 @@
                     </Border>
                 </UniformGrid>
 
-                <WrapPanel HorizontalAlignment="Center" Margin="0,24,0,0">
+                <WrapPanel HorizontalAlignment="Center" Margin="0,14,0,0">
                     <Border Style="{StaticResource Pill}">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Style="{StaticResource Icon}" Text="&#xEA18;" FontSize="12" Foreground="{StaticResource TealText}" Margin="0,0,7,0" />

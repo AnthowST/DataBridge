@@ -62,6 +62,7 @@ public sealed class CopyLogWriter
             WriteBrowserEvents(log, plan);
             WriteJobs(log, plan, result);
             WriteWifi(log, result);
+            WriteNetworkDrives(log, plan, result);
             WritePrinters(log, plan, result);
             WriteOutlookMailbox(log, plan, result);
             WriteSection(log, "ÉLÉMENTS IGNORÉS", "ignored", result.SkippedFileCount + result.InterruptedFileCount);
@@ -252,6 +253,24 @@ public sealed class CopyLogWriter
             log.WriteLine($"{w.ProfileName} : profil exporté ({w.FileName}) — {key}");
         }
         log.WriteLine("Les clés Wi-Fi ne sont jamais écrites dans ce journal. Les fichiers XML exportés peuvent les contenir : à conserver en lieu sûr.");
+    }
+
+    private static void WriteNetworkDrives(StreamWriter log, CopyPlan plan, CopyResult result)
+    {
+        Title(log, "LECTEURS RÉSEAU");
+        if (plan.NetworkDrives.Count == 0)
+        {
+            log.WriteLine("Aucun lecteur réseau sélectionné.");
+            return;
+        }
+        if (result.NetworkDrives.Count == 0)
+        {
+            log.WriteLine("Non enregistrés (sauvegarde arrêtée avant cette étape).");
+            return;
+        }
+        foreach (var d in result.NetworkDrives)
+            log.WriteLine($"{d.Letter} → {d.RemotePath} — compte : {d.AccountLabel} — {d.StateLabel}");
+        log.WriteLine("Les mots de passe des lecteurs réseau ne sont pas lisibles par Windows : ils ne sont pas sauvegardés et seront demandés à la restauration.");
     }
 
     private static void WritePrinters(StreamWriter log, CopyPlan plan, CopyResult result)

@@ -107,6 +107,32 @@ public class OutlookPrintersTests
     }
 
     [Fact]
+    public void Unchecking_the_mailbox_main_switch_restores_nothing_and_keeps_the_categories()
+    {
+        using var t = new TempTree();
+        var content = BackupReader.Open(BackupWithOutlookAndPrinters(t)).Content!;
+        var selection = RestoreSelection.Create(content, RestoreTests.Target(t));
+        Assert.True(selection.Mailbox!.IncludeMailbox);
+
+        // Unchecked without a target: no job, and no blocking "choose the target mailbox".
+        selection.Mailbox.IncludeMailbox = false;
+        var plan = RestorePlanner.BuildPlan(selection);
+        Assert.Null(plan.Outlook);
+        Assert.Contains("Boîte Outlook : non sélectionnée", plan.NotSelected);
+        Assert.DoesNotContain(RestorePlanner.Validate(selection, plan), i => i.Message.Contains("Boîte Outlook"));
+
+        // Unchecked with a target and categories: still nothing restored.
+        selection.Mailbox.TargetStoreId = "target-store";
+        selection.Mailbox.TargetName = "nouveau@exemple.ch";
+        Assert.Null(RestorePlanner.BuildPlan(selection).Outlook);
+
+        // Checked again: the categories chosen before are kept.
+        selection.Mailbox.Selected = OutlookCategories.Mails | OutlookCategories.Contacts;
+        selection.Mailbox.IncludeMailbox = true;
+        Assert.Equal(OutlookCategories.Mails | OutlookCategories.Contacts, RestorePlanner.BuildPlan(selection).Outlook!.Categories);
+    }
+
+    [Fact]
     public void Manifest_paths_of_the_mailbox_cannot_leave_the_backup()
     {
         using var t = new TempTree();

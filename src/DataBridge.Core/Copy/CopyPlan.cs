@@ -49,6 +49,8 @@ public sealed class CopyPlan
     public required string BackupFolderName { get; init; }
     public required IReadOnlyList<CopyJob> Jobs { get; init; }
     public WifiJob? Wifi { get; init; }
+    /// <summary>Network drives recorded in the manifest and the log (2.2): letter, share, account name; never a password.</summary>
+    public IReadOnlyList<NetworkDriveInfo> NetworkDrives { get; init; } = [];
     /// <summary>Printers exported to Imprimantes\Imprimantes.prnbak after the files (2.1).</summary>
     public PrinterTransfer.PrinterBackupJob? Printers { get; init; }
     /// <summary>Outlook mailbox exported to a new PST in Outlook\Boite after the files (2.1).</summary>

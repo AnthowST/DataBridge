@@ -56,16 +56,28 @@ public sealed class RestoreViewModel : ObservableObject, IDisposable, IExplorerH
         Outlook = new RestoreOutlookViewModel(this);
         Browsers = new RestoreBrowsersViewModel(this);
         Wifi = new RestoreWifiViewModel(this);
+        NetworkDrives = new RestoreNetworkDrivesViewModel(this);
         Wallpaper = new RestoreWallpaperViewModel(this);
         Printers = new RestorePrintersViewModel(this);
         Summary = new RestoreSummaryViewModel(this);
         Progress = new RestoreProgressViewModel(this);
-        Pages = [Source, Personal, Additional, Outlook, Browsers, Wifi, Wallpaper, Printers, Summary, Progress];
+        Hub = new RestoreHubViewModel(this);
+        Pages = [Source, Hub, Personal, Additional, Outlook, Browsers, Wifi, NetworkDrives, Wallpaper, Printers, Summary, Progress];
         foreach (var p in Pages) p.IsEnabled = p == Source;
         _currentPage = Source;
+        Steps =
+        [
+            new WizardStep(1, "Restaurer", "R_Step_Mode", () => _shell.GoHome()),
+            new WizardStep(2, "Sauvegarde", "R_Nav_Source", () => GoTo(Source)),
+            new WizardStep(3, "Quoi", "R_Step_What", () => GoTo(Hub)),
+            new WizardStep(4, "Lancer", "R_Nav_Summary", () => GoTo(Summary)),
+        ];
+        UpdateSteps();
 
-        NextCommand = new RelayCommand(GoNext, () => !IsBusy && HasBackup && Pages.IndexOf(CurrentPage) < Pages.IndexOf(Summary));
-        PreviousCommand = new RelayCommand(GoPrevious, () => !IsBusy && !IsFinished && Pages.IndexOf(CurrentPage) > 0);
+        // Main path: Sauvegarde (Source) → Quoi (Hub) → Lancer (Summary). A detailed page always comes back to Quoi.
+        NextCommand = new RelayCommand(GoNext, () => !IsBusy && CurrentPage != Summary && (HasBackup || Source.HasContent));
+        PreviousCommand = new RelayCommand(GoPrevious, () => !IsBusy && !IsFinished);
+        BackToHubCommand = new RelayCommand(() => GoTo(Hub), () => IsDetailPage && !IsBusy && !IsFinished);
         HomeCommand = new RelayCommand(() => _shell.GoHome(), () => CanGoHome);
 
         _timer = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromMilliseconds(400) };
@@ -84,25 +96,30 @@ public sealed class RestoreViewModel : ObservableObject, IDisposable, IExplorerH
     public string BackupName => Backup is { } b ? Path.GetFileName(b.Root) : "";
 
     public RestoreSourceViewModel Source { get; }
+    /// <summary>Step 3 "Quoi": the categories of the backup on one page; the detailed pages below are opened from its tiles.</summary>
+    public RestoreHubViewModel Hub { get; }
     public PersonalViewModel Personal { get; private set; }
     public RestoreAdditionalViewModel Additional { get; }
     public RestoreOutlookViewModel Outlook { get; }
     public RestoreBrowsersViewModel Browsers { get; }
     public RestoreWifiViewModel Wifi { get; }
+    public RestoreNetworkDrivesViewModel NetworkDrives { get; }
     public RestoreWallpaperViewModel Wallpaper { get; }
     public RestorePrintersViewModel Printers { get; }
     public RestoreSummaryViewModel Summary { get; }
     public RestoreProgressViewModel Progress { get; }
     public ObservableCollection<WizardPage> Pages { get; }
+    /// <summary>The four steps shown at the top of the window.</summary>
+    public IReadOnlyList<WizardStep> Steps { get; }
 
     public ICommand NextCommand { get; }
     public ICommand PreviousCommand { get; }
+    /// <summary>"← Retour à Quoi" of a "Personnaliser" sub-page: every choice made there is kept (same selection objects).</summary>
+    public ICommand BackToHubCommand { get; }
     public ICommand HomeCommand { get; }
 
     public string WindowTitle => $"{AppInfo.Name} — Restauration d'une sauvegarde sur {Profile.MachineName}";
     public string VersionText => $"{AppInfo.Name} {AppInfo.Version}";
-    public string ModeLabel => "Restauration";
-    public string StepsTitle => "ÉTAPES DE LA RESTAURATION";
     public string ScanStatus { get => _scanStatus; private set => Set(ref _scanStatus, value); }
 
     public bool IsRestoring
@@ -113,6 +130,7 @@ public sealed class RestoreViewModel : ObservableObject, IDisposable, IExplorerH
             if (!Set(ref _isRestoring, value)) return;
             OnPropertyChanged(nameof(ShowFooter));
             OnPropertyChanged(nameof(CanGoHome));
+            UpdateSteps();
         }
     }
 
@@ -124,6 +142,7 @@ public sealed class RestoreViewModel : ObservableObject, IDisposable, IExplorerH
         {
             if (!Set(ref _isLaunching, value)) return;
             OnPropertyChanged(nameof(CanGoHome));
+            UpdateSteps();
             Summary.Refresh();
             CommandManager.InvalidateRequerySuggested();
         }
@@ -144,12 +163,18 @@ public sealed class RestoreViewModel : ObservableObject, IDisposable, IExplorerH
             OnPropertyChanged();
             OnPropertyChanged(nameof(IsSummaryPage));
             OnPropertyChanged(nameof(ShowFooter));
+            OnPropertyChanged(nameof(IsDetailPage));
+            OnPropertyChanged(nameof(NextLabel));
+            UpdateSteps();
             value.OnActivated();
             CommandManager.InvalidateRequerySuggested();
         }
     }
 
     public bool IsSummaryPage => CurrentPage == Summary;
+    /// <summary>A page opened from a tile of step 3 ("Personnaliser"): its footer only brings back to step 3.</summary>
+    public bool IsDetailPage => CurrentPage != Source && CurrentPage != Hub && CurrentPage != Summary && CurrentPage != Progress;
+    public string NextLabel => IsDetailPage ? "Terminé" : "Suivant";
     public bool ShowFooter => CurrentPage != Progress;
 
     // ------------------------------------------------------------------ footer (shared wizard view)
@@ -186,12 +211,13 @@ public sealed class RestoreViewModel : ObservableObject, IDisposable, IExplorerH
     {
         if (_selection?.Backup.Root == content.Root && _selection.Backup == content)
         {
-            GoTo(Personal);
+            GoTo(Hub);
             return;
         }
         Target = Target.WithFreshBrowsers();
         _selection = RestoreSelection.Create(content, Target);
         _selection.WifiState = WifiRestoreService.Inspect();
+        _selection.NetworkDriveState = NetworkDriveService.Inspect();
         Scanner.Invalidate();
         Listings.Invalidate();
 
@@ -207,6 +233,7 @@ public sealed class RestoreViewModel : ObservableObject, IDisposable, IExplorerH
         Outlook.Load();
         Browsers.Load();
         Wifi.Load();
+        NetworkDrives.Load();
         Wallpaper.Load();
         Printers.Load();
         foreach (var p in Pages) p.IsEnabled = p != Progress;
@@ -216,7 +243,8 @@ public sealed class RestoreViewModel : ObservableObject, IDisposable, IExplorerH
         OnPropertyChanged(nameof(FooterDetail));
         SelectionChanged();
         Personal.RefreshStates();
-        GoTo(Personal);
+        Hub.Load();
+        GoTo(Hub);
     }
 
     private PersonalViewModel EmptyPersonal() =>
@@ -297,23 +325,35 @@ public sealed class RestoreViewModel : ObservableObject, IDisposable, IExplorerH
 
     private void GoNext()
     {
-        var i = Pages.IndexOf(CurrentPage);
-        while (++i <= Pages.IndexOf(Summary))
+        if (CurrentPage == Source)
         {
-            if (Pages[i].IsEnabled) { CurrentPage = Pages[i]; return; }
+            // "Suivant" on the backup chosen (and checked) uses it, like "Utiliser cette sauvegarde".
+            if (Source.Content is { } content && !Source.IsInUse) LoadBackup(content);
+            else GoTo(Hub);
+            return;
         }
+        CurrentPage = CurrentPage == Hub ? Summary : Hub;
     }
 
     private void GoPrevious()
     {
-        var i = Pages.IndexOf(CurrentPage);
-        while (--i >= 0)
-        {
-            if (Pages[i].IsEnabled) { CurrentPage = Pages[i]; return; }
-        }
+        if (CurrentPage == Source) _shell.GoHome();
+        else CurrentPage = CurrentPage == Hub ? Source : Hub;
     }
 
     public void GoTo(WizardPage page) => CurrentPage = page;
+
+    private void UpdateSteps()
+    {
+        var current = CurrentPage == Source ? 2 : CurrentPage == Summary || CurrentPage == Progress ? 4 : 3;
+        var locked = IsRestoring || IsLaunching || IsFinished;
+        foreach (var s in Steps)
+        {
+            s.IsCurrent = s.Number == current;
+            s.IsDone = s.Number < current || (IsFinished && s.Number == 4);
+            s.CanGo = !locked && s.Number != current && (s.Number <= 2 || HasBackup);
+        }
+    }
 
     public void Activate()
     {
@@ -349,6 +389,9 @@ public sealed class RestoreViewModel : ObservableObject, IDisposable, IExplorerH
                 plan.BrowserEvents = events;
             }
 
+            // Owner of Windows' own credential prompt, shown if a network drive asks for its password.
+            plan.OwnerWindow = new System.Windows.Interop.WindowInteropHelper(Application.Current.MainWindow).Handle;
+
             Progress.IsEnabled = true;
             IsRestoring = true;
             foreach (var p in Pages) p.IsEnabled = p == Progress;
@@ -366,6 +409,7 @@ public sealed class RestoreViewModel : ObservableObject, IDisposable, IExplorerH
         IsRestoring = false;
         IsFinished = true;
         foreach (var p in Pages) p.IsEnabled = p == Progress;
+        UpdateSteps();
         CommandManager.InvalidateRequerySuggested();
     }
 

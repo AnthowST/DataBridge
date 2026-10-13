@@ -32,7 +32,8 @@ public sealed class RestoreLogWriter
         var section = issue.Kind switch
         {
             IssueKind.Replaced => "replaced",
-            IssueKind.KeptExisting when issue.Path.StartsWith("Wi-Fi", StringComparison.Ordinal) => "info",
+            IssueKind.KeptExisting when issue.Path.StartsWith("Wi-Fi", StringComparison.Ordinal)
+                                        || issue.Path.StartsWith("Lecteur réseau", StringComparison.Ordinal) => "info",
             IssueKind.KeptExisting => "kept",
             _ => issue.Severity switch { IssueSeverity.Error => "errors", IssueSeverity.Ignored => "ignored", _ => "info" },
         };
@@ -68,6 +69,7 @@ public sealed class RestoreLogWriter
             WriteBrowserEvents(log, plan);
             WriteItems(log, plan, result);
             WriteWifi(log, plan, result);
+            WriteNetworkDrives(log, plan, result);
             WriteWallpaper(log, plan, result);
             WritePrinters(log, plan, result);
             WriteOutlook(log, plan, result);
@@ -155,6 +157,8 @@ public sealed class RestoreLogWriter
                      + (r.NotProcessedFiles > 0 ? $" + non traités {Format.Count(r.NotProcessedFiles)}" : ""));
         if (plan.Wifi.Count > 0)
             L("Profils Wi-Fi", $"{r.Wifi.Count(w => w.Restored)} restauré(s) / {plan.Wifi.Count}");
+        if (plan.NetworkDrives.Count > 0)
+            L("Lecteurs réseau", $"{r.NetworkDrives.Count(d => d.Restored)} connecté(s) / {plan.NetworkDrives.Count}");
         if (r.Outcome == RestoreOutcome.Cancelled)
         {
             log.WriteLine();
@@ -241,6 +245,22 @@ public sealed class RestoreLogWriter
             log.WriteLine($"{w.Profile.Name} ({w.Profile.Authentication}, {(w.Profile.KeyIncluded ? "clé incluse" : "profil sans clé")}) : {r?.Message ?? "non traité"}");
         }
         log.WriteLine("Les clés Wi-Fi ne sont jamais écrites dans ce journal.");
+    }
+
+    private static void WriteNetworkDrives(StreamWriter log, RestorePlan plan, RestoreResult result)
+    {
+        Title(log, "LECTEURS RÉSEAU");
+        if (plan.NetworkDrives.Count == 0)
+        {
+            log.WriteLine(plan.Backup.NetworkDrives.Count == 0 ? "Aucun lecteur réseau dans la sauvegarde." : "Aucun lecteur réseau sélectionné.");
+            return;
+        }
+        log.WriteLine($"Mot de passe demandé par Windows si le partage l'exige : {(plan.AskNetworkPassword ? "oui" : "non")} (jamais lu ni enregistré par DataBridge).");
+        foreach (var d in plan.NetworkDrives)
+        {
+            var r = result.NetworkDrives.FirstOrDefault(x => x.Letter == d.Letter);
+            log.WriteLine($"{d.Letter} → {d.RemotePath} (compte : {d.AccountLabel}) : {r?.Message ?? "non traité"}");
+        }
     }
 
     private static void WriteWallpaper(StreamWriter log, RestorePlan plan, RestoreResult result)

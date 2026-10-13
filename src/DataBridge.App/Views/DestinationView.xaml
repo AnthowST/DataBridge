@@ -4,7 +4,7 @@
              xmlns:vm="clr-namespace:DataBridge.App.ViewModels"
              xmlns:copy="clr-namespace:DataBridge.Core.Copy;assembly=DataBridge.Core">
     <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Margin="28,24,28,24">
+        <StackPanel Margin="24,14,24,18">
             <DockPanel>
                 <Button DockPanel.Dock="Right" Command="{Binding RefreshCommand}" Style="{StaticResource GhostButton}" VerticalAlignment="Top"
                         AutomationProperties.AutomationId="RefreshVolumesButton" AutomationProperties.Name="Actualiser les volumes">
@@ -14,7 +14,7 @@
                     </StackPanel>
                 </Button>
                 <StackPanel>
-                    <TextBlock Text="1. Destination" Style="{StaticResource PageTitle}" />
+                    <TextBlock Text="Où enregistrer la sauvegarde ?" Style="{StaticResource PageTitle}" />
                     <TextBlock Style="{StaticResource PageSubtitle}"
                                Text="Choisissez le support (clé USB, disque externe, autre partition, partage réseau) ou un dossier. La copie ne démarre jamais sans destination valide." />
                 </StackPanel>
@@ -87,7 +87,7 @@
             </Button>
 
             <!-- Selected destination -->
-            <Border Style="{StaticResource Card}" Margin="0,20,0,0" Visibility="{Binding HasChoice, Converter={StaticResource Visible}}">
+            <Border Style="{StaticResource Card}" Margin="0,14,0,0" Visibility="{Binding HasChoice, Converter={StaticResource Visible}}">
                 <StackPanel>
                     <TextBlock Text="DOSSIER DE SAUVEGARDE QUI SERA CRÉÉ" Style="{StaticResource Label}" />
                     <TextBlock Text="{Binding FolderPreview}" FontFamily="{StaticResource MonoFont}" FontSize="13" Margin="0,6,0,0"
@@ -152,7 +152,7 @@
                     </ItemsControl>
                 </StackPanel>
             </Border>
-            <Border Style="{StaticResource InfoBanner}" Margin="0,20,0,0" Visibility="{Binding HasChoice, Converter={StaticResource Hidden}}">
+            <Border Style="{StaticResource InfoBanner}" Margin="0,14,0,0" Visibility="{Binding HasChoice, Converter={StaticResource Hidden}}">
                 <DockPanel>
                     <TextBlock Style="{StaticResource Icon}" Text="&#xE946;" Foreground="{StaticResource Accent}" Margin="0,0,10,0" />
                     <TextBlock Text="Aucune destination choisie. Sélectionnez un volume ci-dessus ou un dossier." Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />

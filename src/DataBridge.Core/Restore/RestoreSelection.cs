@@ -85,6 +85,8 @@ public sealed class RestoreBrowserChoice
 public sealed class RestoreMailboxChoice(BackupMailbox source)
 {
     public BackupMailbox Source { get; } = source;
+    /// <summary>Main switch of the mailbox card (checked by default): unchecked, nothing of the mailbox is restored and Outlook is not read.</summary>
+    public bool IncludeMailbox { get; set; } = true;
     /// <summary>Checked categories (everything of each category is restored).</summary>
     public Outlook.OutlookCategories Selected { get; set; } = source.Available;
     /// <summary>Target mailbox, always chosen explicitly (never guessed).</summary>
@@ -94,7 +96,7 @@ public sealed class RestoreMailboxChoice(BackupMailbox source)
     public bool IntoNewFolder { get; set; }
     /// <summary>Also replace the autocomplete cache of the target (its current cache is copied first). Not guaranteed by Outlook.</summary>
     public bool ReplaceAutocompleteCache { get; set; }
-    public bool Include => (Selected & Source.Available) != Outlook.OutlookCategories.None;
+    public bool Include => IncludeMailbox && (Selected & Source.Available) != Outlook.OutlookCategories.None;
 }
 
 /// <summary>
@@ -113,6 +115,12 @@ public sealed class RestoreSelection
     public HashSet<string> SelectedWifi { get; } = new(StringComparer.OrdinalIgnoreCase);
     public WifiExistingPolicy WifiExisting { get; set; } = WifiExistingPolicy.Keep;
     public WifiEnvironment? WifiState { get; set; }
+    /// <summary>Selected network drives (by letter, "Z:").</summary>
+    public HashSet<string> SelectedNetworkDrives { get; } = new(StringComparer.OrdinalIgnoreCase);
+    /// <summary>Drive letters already used on this PC (read when the backup is loaded).</summary>
+    public Detection.NetworkDriveEnvironment NetworkDriveState { get; set; } = Detection.NetworkDriveEnvironment.Empty;
+    /// <summary>When a share asks for a password, let Windows ask for it during the restore (the password never goes through DataBridge).</summary>
+    public bool AskNetworkPassword { get; set; } = true;
     public bool IncludeWallpaper { get; set; }
     public ConflictPolicy Policy { get; set; } = ConflictPolicy.ReplaceIfNewer;
     /// <summary>Outlook mailbox of the backup (null when the backup has none).</summary>
@@ -141,6 +149,7 @@ public sealed class RestoreSelection
             }
         }
         foreach (var w in backup.Wifi) s.SelectedWifi.Add(w.RelativePath);
+        foreach (var d in backup.NetworkDrives) s.SelectedNetworkDrives.Add(d.Letter);
         s.IncludeWallpaper = backup.Wallpaper != null;
         if (backup.Mailbox != null) s.Mailbox = new RestoreMailboxChoice(backup.Mailbox);
         return s;

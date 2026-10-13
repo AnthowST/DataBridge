@@ -56,6 +56,12 @@ public sealed record BackupWifiProfile(string Name, string RelativePath, string 
 
 public sealed record BackupWallpaper(string RelativePath, string FullPath, long Size);
 
+/// <summary>A network drive of the source session (2.2): letter, share and account name. Never a password.</summary>
+public sealed record BackupNetworkDrive(string Letter, string RemotePath, string? UserName, bool Persistent)
+{
+    public string AccountLabel => UserName ?? "Identifiants de la session Windows";
+}
+
 /// <summary>Printers archive of a 2.1 backup (.prnbak, PrintBridge format).</summary>
 public sealed record BackupPrinters(string RelativePath, string FullPath, long Size, IReadOnlyList<ManifestPrinter> Printers);
 
@@ -102,6 +108,7 @@ public sealed class BackupContent
     public BackupSignatures? Signatures { get; init; }
     public IReadOnlyList<BackupBrowser> Browsers { get; init; } = [];
     public IReadOnlyList<BackupWifiProfile> Wifi { get; init; } = [];
+    public IReadOnlyList<BackupNetworkDrive> NetworkDrives { get; init; } = [];
     public BackupWallpaper? Wallpaper { get; init; }
     public BackupPrinters? Printers { get; init; }
     public BackupMailbox? Mailbox { get; init; }
@@ -125,13 +132,14 @@ public sealed class BackupContent
         if (Signatures != null) yield return "Signatures Outlook";
         if (Browsers.Count > 0) yield return "Navigateurs (" + string.Join(", ", Browsers.Select(b => BrowserProcessService.DisplayName(b.Kind).Split(' ')[^1])) + ")";
         if (Wifi.Count > 0) yield return Format.Plural(Wifi.Count, "profil Wi-Fi", "profils Wi-Fi");
+        if (NetworkDrives.Count > 0) yield return Format.Plural(NetworkDrives.Count, "lecteur réseau", "lecteurs réseau");
         if (Wallpaper != null) yield return "Fond d'écran";
         if (Printers != null) yield return Format.Plural(Printers.Printers.Count, "imprimante", "imprimantes");
         if (Mailbox != null) yield return "Boîte Outlook";
     }
 
     public bool IsEmpty => Personal.Count == 0 && Additional.Count == 0 && Signatures is null && Browsers.Count == 0 && Wifi.Count == 0 && Wallpaper is null
-                           && Printers is null && Mailbox is null;
+                           && Printers is null && Mailbox is null && NetworkDrives.Count == 0;
 }
 
 /// <summary>Result of opening a folder: the content, or why it cannot be restored.</summary>

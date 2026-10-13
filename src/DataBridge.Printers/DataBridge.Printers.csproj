@@ -7,7 +7,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- WPF only for System.Printing / ReachFramework (PrintTicket <-> DEVMODE conversion). -->
     <UseWPF>true</UseWPF>
-    <Version>2.1.2</Version>
+    <Version>2.2.0</Version>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <NoWarn>$(NoWarn);SYSLIB1054;CA1416</NoWarn>
   </PropertyGroup>

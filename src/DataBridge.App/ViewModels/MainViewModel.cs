@@ -50,7 +50,6 @@ public sealed class MainViewModel : ObservableObject, IDisposable, IExplorerHost
         foreach (var browser in BrowserDetector.DetectAll(Profile.LocalAppData, Profile.RoamingAppData))
             Selection.Browsers.Add(new BrowserSelection(browser));
 
-        Home = new HomeViewModel(this);
         Destination = new DestinationViewModel(this);
         Personal = new PersonalViewModel(this, Selection.PersonalRoots.Select(r => new PersonalRootViewModel(r)).ToList(), 2, "Nav_Personal",
             "Dépliez un dossier pour choisir précisément ce qui sera copié. Rien n'est exclu automatiquement : les fichiers volumineux sont seulement signalés.");
@@ -58,27 +57,39 @@ public sealed class MainViewModel : ObservableObject, IDisposable, IExplorerHost
         Outlook = new OutlookViewModel(this);
         Browsers = new BrowsersViewModel(this);
         Wifi = new WifiViewModel(this);
+        NetworkDrives = new NetworkDrivesViewModel(this);
         Wallpaper = new WallpaperViewModel(this);
         Printers = new PrintersViewModel(this);
         Summary = new SummaryViewModel(this);
         Copy = new CopyViewModel(this);
-        Pages = [Home, Destination, Personal, Additional, Outlook, Browsers, Wifi, Wallpaper, Printers, Summary, Copy];
+        Hub = new BackupHubViewModel(this);
+        Pages = [Destination, Hub, Personal, Additional, Outlook, Browsers, Wifi, NetworkDrives, Wallpaper, Printers, Summary, Copy];
         Copy.IsEnabled = false;
-        _currentPage = Home;
+        _currentPage = Destination;
+        Steps =
+        [
+            new WizardStep(1, "Sauvegarder", "Step_Mode", () => _shell.GoHome()),
+            new WizardStep(2, "Où", "Nav_Destination", () => GoTo(Destination)),
+            new WizardStep(3, "Quoi", "Step_What", () => GoTo(Hub)),
+            new WizardStep(4, "Lancer", "Nav_Summary", () => GoTo(Summary)),
+        ];
 
         // Start sizing every personal folder in the background right away (progressively, UI stays responsive).
         foreach (var root in Selection.PersonalRoots.Where(r => r.Available))
             Scanner.Enqueue(root.Path);
 
-        NextCommand = new RelayCommand(GoNext, () => !IsCopying && !IsLaunching && Pages.IndexOf(CurrentPage) < Pages.IndexOf(Summary));
-        PreviousCommand = new RelayCommand(GoPrevious, () => !IsCopying && !IsLaunching && Pages.IndexOf(CurrentPage) > 0);
+        NextCommand = new RelayCommand(GoNext, () => !IsCopying && !IsLaunching && CurrentPage != Summary);
+        PreviousCommand = new RelayCommand(GoPrevious, () => !IsCopying && !IsLaunching);
+        BackToHubCommand = new RelayCommand(() => GoTo(Hub), () => IsDetailPage && !IsCopying && !IsLaunching);
         HomeCommand = new RelayCommand(() => _shell.GoHome(), () => CanGoHome);
 
         _timer = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromMilliseconds(400) };
         _timer.Tick += (_, _) => Tick();
         _timer.Start();
         Wifi.Load();
+        NetworkDrives.Load();
         Printers.Load();
+        UpdateSteps();
         Tick();
     }
 
@@ -91,21 +102,27 @@ public sealed class MainViewModel : ObservableObject, IDisposable, IExplorerHost
     public PlanCalculator Calculator { get; }
     public BackupSelection Selection { get; }
 
-    public HomeViewModel Home { get; }
     public DestinationViewModel Destination { get; }
+    /// <summary>Step 3 "Quoi": every category on one page; the detailed pages below are opened from its tiles.</summary>
+    public BackupHubViewModel Hub { get; }
     public PersonalViewModel Personal { get; }
     public AdditionalViewModel Additional { get; }
     public OutlookViewModel Outlook { get; }
     public BrowsersViewModel Browsers { get; }
     public WifiViewModel Wifi { get; }
+    public NetworkDrivesViewModel NetworkDrives { get; }
     public WallpaperViewModel Wallpaper { get; }
     public PrintersViewModel Printers { get; }
     public SummaryViewModel Summary { get; }
     public CopyViewModel Copy { get; }
     public ObservableCollection<WizardPage> Pages { get; }
+    /// <summary>The four steps shown at the top of the window.</summary>
+    public IReadOnlyList<WizardStep> Steps { get; }
 
     public ICommand NextCommand { get; }
     public ICommand PreviousCommand { get; }
+    /// <summary>"← Retour à Quoi" of a "Personnaliser" sub-page: every choice made there is kept (same selection objects).</summary>
+    public ICommand BackToHubCommand { get; }
     /// <summary>Back to the DataBridge home (Sauvegarder / Restaurer), never during a copy.</summary>
     public ICommand HomeCommand { get; }
     public bool CanGoHome => !IsCopying && !IsLaunching;
@@ -117,8 +134,6 @@ public sealed class MainViewModel : ObservableObject, IDisposable, IExplorerHost
     public ICommand StartCommand => Summary.StartCommand;
     public string StartLabel => "Lancer la copie";
     public string StartAutomationId => "FooterStartCopyButton";
-    public string ModeLabel => "Sauvegarde";
-    public string StepsTitle => "ÉTAPES DE LA SAUVEGARDE";
 
     // IExplorerHost (personal folders explorer)
     bool IExplorerHost.SkipCloudOnly => Selection.SkipCloudOnly;
@@ -150,6 +165,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable, IExplorerHost
         {
             if (!Set(ref _isLaunching, value)) return;
             OnPropertyChanged(nameof(CanGoHome));
+            UpdateSteps();
             Summary.Refresh();
             CommandManager.InvalidateRequerySuggested();
         }
@@ -166,12 +182,18 @@ public sealed class MainViewModel : ObservableObject, IDisposable, IExplorerHost
             OnPropertyChanged();
             OnPropertyChanged(nameof(IsSummaryPage));
             OnPropertyChanged(nameof(ShowFooter));
+            OnPropertyChanged(nameof(IsDetailPage));
+            OnPropertyChanged(nameof(NextLabel));
+            UpdateSteps();
             value.OnActivated();
             CommandManager.InvalidateRequerySuggested();
         }
     }
 
     public bool IsSummaryPage => CurrentPage == Summary;
+    /// <summary>A page opened from a tile of step 3 ("Personnaliser"): its footer only brings back to step 3.</summary>
+    public bool IsDetailPage => CurrentPage != Destination && CurrentPage != Hub && CurrentPage != Summary && CurrentPage != Copy;
+    public string NextLabel => IsDetailPage ? "Terminé" : "Suivant";
     public bool ShowFooter => CurrentPage != Copy;
 
     public bool IsCopying
@@ -183,6 +205,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable, IExplorerHost
             foreach (var p in Pages) p.IsEnabled = !value || p == Copy;
             OnPropertyChanged(nameof(ShowFooter));
             OnPropertyChanged(nameof(CanGoHome));
+            UpdateSteps();
         }
     }
 
@@ -254,6 +277,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable, IExplorerHost
         CurrentPage.OnTick();
         Personal.UpdateRootStatus();
         Destination.UpdateSidebar();
+        UpdateSteps();
         OnPropertyChanged(nameof(FooterDetail));
     }
 
@@ -296,19 +320,31 @@ public sealed class MainViewModel : ObservableObject, IDisposable, IExplorerHost
 
     // ------------------------------------------------------------------ navigation
 
-    private void GoNext()
-    {
-        var i = Pages.IndexOf(CurrentPage);
-        if (i < Pages.IndexOf(Summary)) CurrentPage = Pages[i + 1];
-    }
+    // Main path: Où (Destination) → Quoi (Hub) → Lancer (Summary). A detailed page always comes back to Quoi.
+
+    private void GoNext() => CurrentPage = CurrentPage == Hub ? Summary : Hub;
 
     private void GoPrevious()
     {
-        var i = Pages.IndexOf(CurrentPage);
-        if (i > 0) CurrentPage = Pages[i - 1];
+        if (CurrentPage == Destination) _shell.GoHome();
+        else CurrentPage = CurrentPage == Hub ? Destination : Hub;
     }
 
     public void GoTo(WizardPage page) => CurrentPage = page;
+
+    private void UpdateSteps()
+    {
+        if (Steps is null) return;
+        var current = CurrentPage == Destination ? 2 : CurrentPage == Summary || CurrentPage == Copy ? 4 : 3;
+        var locked = IsCopying || IsLaunching || IsFinished;
+        foreach (var s in Steps)
+        {
+            s.IsCurrent = s.Number == current;
+            // "Où" is only green once a valid destination is chosen (it can be skipped and chosen later from the summary).
+            s.IsDone = (s.Number < current && (s.Number != 2 || Destination.IsValid)) || (IsFinished && s.Number == 4);
+            s.CanGo = !locked && s.Number != current;
+        }
+    }
 
     // ------------------------------------------------------------------ copy
 
@@ -398,6 +434,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable, IExplorerHost
         IsCopying = false;
         IsFinished = true;
         foreach (var p in Pages) p.IsEnabled = p == Copy; // the backup is done: the wizard stays on the result
+        UpdateSteps();
         CommandManager.InvalidateRequerySuggested();
     }
 

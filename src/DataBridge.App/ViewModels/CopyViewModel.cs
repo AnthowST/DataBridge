@@ -34,7 +34,7 @@ public sealed class CopyViewModel : PageViewModel
     private double _speed;
     private TimeSpan _lastSpeedSample;
 
-    public CopyViewModel(MainViewModel main) : base(main, 10, "Copie", "", "Nav_Copy")
+    public CopyViewModel(MainViewModel main) : base(main, 11, "Copie", "", "Nav_Copy")
     {
         CancelCommand = new RelayCommand(RequestCancel, () => IsRunning && !IsCancelling);
         OpenBackupCommand = new RelayCommand(() => Open(_result?.BackupPath), () => _result != null);
@@ -82,6 +82,7 @@ public sealed class CopyViewModel : PageViewModel
     public bool ResultFailed => ResultKind == MarkKind.Off;
     public IReadOnlyList<ResultLine> ResultLines { get; private set; } = [];
     public IReadOnlyList<ResultLine> WifiLines { get; private set; } = [];
+    public IReadOnlyList<ResultLine> NetworkDriveLines { get; private set; } = [];
     public IReadOnlyList<ResultLine> ExtraLines { get; private set; } = [];
     public double ProcessedPercent { get; private set; }
     // Key figures of the result screen (same CopyResult as the log).
@@ -286,6 +287,11 @@ public sealed class CopyViewModel : PageViewModel
             wifi.Add(new(MarkKind.Off, "Aucun profil Wi-Fi exporté"));
         }
         WifiLines = wifi;
+        NetworkDriveLines = r.NetworkDrives.Count > 0
+            ? [new(MarkKind.Ok, Format.Plural(r.NetworkDrives.Count, "lecteur réseau enregistré", "lecteurs réseau enregistrés")
+                                + " : " + string.Join(", ", r.NetworkDrives.Select(d => d.Letter))),
+               new(MarkKind.Warn, "Mots de passe non sauvegardés (demandés à la restauration)")]
+            : [new(MarkKind.Off, "Aucun lecteur réseau enregistré")];
         ExtraLines = [.. ExtraResultLines.Outlook(r.Outlook, restore: false), .. ExtraResultLines.PrintersBackup(r.Printers)];
         DurationText = Format.Duration(r.Duration);
         Status = r.Outcome switch { CopyOutcome.Completed => "Terminée", CopyOutcome.Cancelled => "Interrompue", _ => "Erreur" };
@@ -294,7 +300,7 @@ public sealed class CopyViewModel : PageViewModel
         foreach (var name in new[]
                  {
                      nameof(IsFinished), nameof(ResultTitle), nameof(ResultSubtitle), nameof(ResultKind), nameof(ResultOk), nameof(ResultWarn),
-                     nameof(ResultFailed), nameof(ResultLines), nameof(WifiLines), nameof(ExtraLines), nameof(DurationText), nameof(LogPath),
+                     nameof(ResultFailed), nameof(ResultLines), nameof(WifiLines), nameof(NetworkDriveLines), nameof(ExtraLines), nameof(DurationText), nameof(LogPath),
                      nameof(ProcessedPercent), nameof(ProcessedText), nameof(ControlText),
                      nameof(KpiFiles), nameof(KpiBytes), nameof(KpiErrors), nameof(HasErrors),
                  })

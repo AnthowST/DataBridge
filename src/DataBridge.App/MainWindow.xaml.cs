@@ -11,6 +11,12 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        // Small screens or 125-150 % scaling: never open taller / wider than the work area (the pages scroll instead).
+        var area = SystemParameters.WorkArea;
+        Height = Math.Min(Height, area.Height);
+        Width = Math.Min(Width, area.Width);
+        MinHeight = Math.Min(MinHeight, Height);
+        MinWidth = Math.Min(MinWidth, Width);
     }
 
     private ShellViewModel? Shell => DataContext as ShellViewModel;

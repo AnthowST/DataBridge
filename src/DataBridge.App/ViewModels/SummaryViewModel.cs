@@ -25,10 +25,10 @@ public sealed class SummaryViewModel : PageViewModel
     private IReadOnlyList<SummaryGroup> _groups = [];
     private IReadOnlyList<string> _warnings = [];
 
-    public SummaryViewModel(MainViewModel main) : base(main, 9, "Résumé", "", "Nav_Summary")
+    public SummaryViewModel(MainViewModel main) : base(main, 10, "Résumé", "", "Nav_Summary")
     {
         StartCommand = new RelayCommand(() => Main.StartCopy(), () => CanStart);
-        BackToSelectionCommand = new RelayCommand(() => Main.GoTo(Main.Personal));
+        BackToSelectionCommand = new RelayCommand(() => Main.GoTo(Main.Hub));
         ChooseDestinationCommand = new RelayCommand(() => Main.GoTo(Main.Destination));
         Status = "Vérification avant copie";
     }
@@ -93,6 +93,7 @@ public sealed class SummaryViewModel : PageViewModel
 
     public bool HasDestination => Main.Destination.IsValid;
     public bool NothingSelected => Main.Totals is { } t && t.PerJob.Count == 0 && Main.Selection.SelectedWifi.Count == 0
+                                   && Main.Selection.SelectedNetworkDrives.Count == 0
                                    && Main.Selection.SelectedPrinters.Count == 0 && Main.Selection.OutlookMailbox is null;
     public bool InsufficientSpace => IsComplete && FreeBytes is { } f && PlannedBytes + SafetyMargin > f;
     public string SpaceSelectedText => $"Données à copier : {Format.Size(PlannedBytes)}";
@@ -205,6 +206,10 @@ public sealed class SummaryViewModel : PageViewModel
                 ? new SummaryLine(MarkKind.Ok, Format.Plural(wifiCount, "profil Wi-Fi", "profils Wi-Fi"),
                     WifiDetail())
                 : new SummaryLine(MarkKind.Off, "Profils Wi-Fi", Main.Wifi.Items.Count == 0 ? "aucun profil" : "aucun sélectionné"),
+            s.SelectedNetworkDrives.Count > 0
+                ? new SummaryLine(MarkKind.Ok, Format.Plural(s.SelectedNetworkDrives.Count, "lecteur réseau", "lecteurs réseau"),
+                    string.Join(", ", s.NetworkDrives.Where(d => s.SelectedNetworkDrives.Contains(d.Letter)).Select(d => $"{d.Letter} {d.RemotePath}")) + " · sans mot de passe")
+                : new SummaryLine(MarkKind.Off, "Lecteurs réseau", !Main.NetworkDrives.IsLoaded ? "détection…" : s.NetworkDrives.Count == 0 ? "aucun" : "aucun sélectionné"),
         ]));
 
         // Windows

@@ -2,12 +2,12 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Margin="28,24,28,24">
-            <TextBlock Text="7. Fond d'écran" Style="{StaticResource PageTitle}" />
+        <StackPanel Margin="24,14,24,18">
+            <TextBlock Text="Fond d'écran" Style="{StaticResource PageTitle}" />
             <TextBlock Style="{StaticResource PageSubtitle}"
                        Text="Copie du fond d'écran actuel tel que Windows le met en cache (fichier sans extension) dans Windows\Wallpaper\TranscodedWallpaper." />
 
-            <Border Style="{StaticResource Card}" Margin="0,18,0,0">
+            <Border Style="{StaticResource Card}" Margin="0,12,0,0">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />

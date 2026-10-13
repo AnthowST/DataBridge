@@ -148,6 +148,9 @@ public static class BackupManifestWriter
             }
         }
 
+        foreach (var d in result.NetworkDrives)
+            m.NetworkDrives.Add(new ManifestNetworkDrive { Letter = d.Letter, RemotePath = d.RemotePath, UserName = d.UserName, Persistent = d.Persistent });
+
         if (seed.Wallpaper is { } wp && Of(wp.Job) is { CopiedFiles: > 0 } wjr)
         {
             m.Wallpaper = new ManifestWallpaper
@@ -199,6 +202,7 @@ public static class BackupManifestWriter
         if (m.OutlookSignatures != null) m.Categories.Add("outlookSignatures");
         if (m.Browsers.Count > 0) m.Categories.Add("browsers");
         if (m.Wifi.Count > 0) m.Categories.Add("wifi");
+        if (m.NetworkDrives.Count > 0) m.Categories.Add("networkDrives");
         if (m.Wallpaper != null) m.Categories.Add("wallpaper");
         if (m.Printers != null) m.Categories.Add("printers");
         if (m.OutlookMailbox != null) m.Categories.Add("outlookMailbox");

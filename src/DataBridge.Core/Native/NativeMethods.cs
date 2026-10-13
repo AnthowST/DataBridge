@@ -186,4 +186,38 @@ internal static class NativeMethods
     [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static extern bool SystemParametersInfoW(uint uiAction, uint uiParam, string pvParam, uint fWinIni);
+
+    // ---------------------------------------------------------------- Network drives (mpr.dll)
+
+    internal const uint RESOURCETYPE_DISK = 0x00000001;
+    internal const uint CONNECT_UPDATE_PROFILE = 0x00000001;
+    internal const uint CONNECT_INTERACTIVE = 0x00000008;
+    internal const uint CONNECT_PROMPT = 0x00000010;
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    internal struct NETRESOURCEW
+    {
+        public uint dwScope;
+        public uint dwType;
+        public uint dwDisplayType;
+        public uint dwUsage;
+        public string? lpLocalName;
+        public string? lpRemoteName;
+        public string? lpComment;
+        public string? lpProvider;
+    }
+
+    /// <summary>Connects a drive letter with the session rights (the WNet functions return the error code directly).</summary>
+    [DllImport("mpr.dll", CharSet = CharSet.Unicode, ExactSpelling = true)]
+    internal static extern int WNetAddConnection2W(ref NETRESOURCEW lpNetResource, string? lpPassword, string? lpUserName, uint dwFlags);
+
+    /// <summary>Same, with an owner window: with CONNECT_INTERACTIVE, Windows itself asks for the password.</summary>
+    [DllImport("mpr.dll", CharSet = CharSet.Unicode, ExactSpelling = true)]
+    internal static extern int WNetAddConnection3W(IntPtr hwndOwner, ref NETRESOURCEW lpNetResource, string? lpPassword, string? lpUserName, uint dwFlags);
+
+    [DllImport("mpr.dll", CharSet = CharSet.Unicode, ExactSpelling = true)]
+    internal static extern int WNetGetUserW(string? lpName, StringBuilder lpUserName, ref int lpnLength);
+
+    [DllImport("mpr.dll", CharSet = CharSet.Unicode, ExactSpelling = true)]
+    internal static extern int WNetCancelConnection2W(string lpName, uint dwFlags, [MarshalAs(UnmanagedType.Bool)] bool fForce);
 }

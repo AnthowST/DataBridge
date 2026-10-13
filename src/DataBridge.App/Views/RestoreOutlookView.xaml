@@ -3,12 +3,12 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="clr-namespace:DataBridge.App.ViewModels">
     <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Margin="28,24,28,24">
+        <StackPanel Margin="24,14,24,18">
             <TextBlock Text="{Binding PageTitle}" Style="{StaticResource PageTitle}" />
             <TextBlock Style="{StaticResource PageSubtitle}"
                        Text="Signatures d'Outlook classique restaurées dans le dossier des signatures de cette session, et boîte aux lettres de la sauvegarde (PST) restaurée dans une boîte du profil Outlook de ce PC que vous choisissez." />
 
-            <Border Style="{StaticResource Card}" Margin="0,18,0,0" Visibility="{Binding IsPresent, Converter={StaticResource Hidden}}"
+            <Border Style="{StaticResource Card}" Margin="0,12,0,0" Visibility="{Binding IsPresent, Converter={StaticResource Hidden}}"
                     AutomationProperties.AutomationId="OutlookAbsent">
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Style="{StaticResource Icon}" Text="&#xE946;" FontSize="14" Foreground="{StaticResource TextTertiary}" Margin="0,1,10,0" />
@@ -17,7 +17,7 @@
             </Border>
 
             <!-- Signatures -->
-            <Border Style="{StaticResource Card}" Margin="0,18,0,0" Visibility="{Binding HasSignatures, Converter={StaticResource Visible}}">
+            <Border Style="{StaticResource Card}" Margin="0,12,0,0" Visibility="{Binding HasSignatures, Converter={StaticResource Visible}}">
                 <StackPanel>
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -54,7 +54,7 @@
                         <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding DestinationText}" FontFamily="{StaticResource MonoFont}" FontWeight="SemiBold"
                                    Foreground="{StaticResource TextStrong}" Margin="0,3" TextTrimming="CharacterEllipsis" AutomationProperties.AutomationId="SignaturesDestination" />
                     </Grid>
-                    <TextBlock Text="SIGNATURES DE LA SAUVEGARDE" Style="{StaticResource Label}" Margin="0,14,0,0" />
+                    <TextBlock Text="SIGNATURES DE LA SAUVEGARDE" Style="{StaticResource Label}" Margin="0,10,0,0" />
                     <ItemsControl ItemsSource="{Binding Names}" Margin="0,6,0,0">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
@@ -68,28 +68,39 @@
                 </StackPanel>
             </Border>
 
-            <!-- Mailbox (2.1) -->
-            <Border Style="{StaticResource Card}" Margin="0,14,0,0" Visibility="{Binding HasMailbox, Converter={StaticResource Visible}}">
+            <!-- Mailbox (2.1). The checkbox is the main switch: unchecked, nothing below is shown, nothing is restored and Outlook is not read. -->
+            <Border Style="{StaticResource Card}" Margin="0,10,0,0" Visibility="{Binding HasMailbox, Converter={StaticResource Visible}}">
                 <StackPanel>
-                    <DockPanel>
-                        <Border Style="{StaticResource IconTile}" Margin="0,0,12,0" VerticalAlignment="Center">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <CheckBox IsChecked="{Binding IncludeMailbox, Mode=TwoWay}" VerticalAlignment="Center"
+                                  AutomationProperties.AutomationId="RestoreIncludeMailbox" AutomationProperties.Name="Restaurer la boîte aux lettres" />
+                        <Border Grid.Column="1" Style="{StaticResource IconTile}" Margin="4,0,12,0" VerticalAlignment="Center">
                             <TextBlock Style="{StaticResource Icon}" Text="&#xE715;" FontSize="17" />
                         </Border>
-                        <StackPanel VerticalAlignment="Center">
+                        <StackPanel Grid.Column="2" VerticalAlignment="Center">
                             <TextBlock FontWeight="SemiBold" FontSize="14" TextWrapping="Wrap"><Run Text="Boîte aux lettres sauvegardée : " /><Run Text="{Binding MailboxName, Mode=OneWay}" /></TextBlock>
                             <TextBlock Text="{Binding MailboxContentText}" Foreground="{StaticResource TextMuted}" AutomationProperties.AutomationId="MailboxContent" />
                             <TextBlock Text="{Binding PstText}" Style="{StaticResource Small}" FontFamily="{StaticResource MonoFont}" />
+                            <TextBlock Text="Non restaurée : Outlook n'est pas lu, rien n'est ajouté dans les boîtes de ce PC."
+                                       Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" Margin="0,4,0,0"
+                                       Visibility="{Binding IncludeMailbox, Converter={StaticResource Hidden}}" AutomationProperties.AutomationId="RestoreMailboxExcluded" />
                         </StackPanel>
-                    </DockPanel>
+                    </Grid>
 
-                    <Separator />
-                    <TextBlock Text="À RESTAURER (tout le contenu de chaque catégorie cochée)" Style="{StaticResource Label}" />
-                    <UniformGrid Columns="4" Margin="0,6,0,0">
-                        <CheckBox IsChecked="{Binding IncludeMails, Mode=TwoWay}" IsEnabled="{Binding CanMails}" Content="Mails" AutomationProperties.AutomationId="RestoreOutlookMails" />
-                        <CheckBox IsChecked="{Binding IncludeCalendar, Mode=TwoWay}" IsEnabled="{Binding CanCalendar}" Content="Calendrier" AutomationProperties.AutomationId="RestoreOutlookCalendar" />
-                        <CheckBox IsChecked="{Binding IncludeContacts, Mode=TwoWay}" IsEnabled="{Binding CanContacts}" Content="Contacts" AutomationProperties.AutomationId="RestoreOutlookContacts" />
-                        <CheckBox IsChecked="{Binding IncludeAutocomplete, Mode=TwoWay}" IsEnabled="{Binding CanAutocomplete}" Content="Autocomplétion" AutomationProperties.AutomationId="RestoreOutlookAutocomplete" />
-                    </UniformGrid>
+                    <StackPanel Visibility="{Binding IncludeMailbox, Converter={StaticResource Visible}}">
+                    <!-- Categories, right under the main checkbox (tout le contenu de chaque catégorie cochée) -->
+                    <StackPanel Margin="30,10,0,0" AutomationProperties.AutomationId="RestoreOutlookCategories">
+                        <CheckBox IsChecked="{Binding IncludeMails, Mode=TwoWay}" IsEnabled="{Binding CanMails}" Content="Mails" Margin="0,3" AutomationProperties.AutomationId="RestoreOutlookMails" />
+                        <CheckBox IsChecked="{Binding IncludeCalendar, Mode=TwoWay}" IsEnabled="{Binding CanCalendar}" Content="Calendrier" Margin="0,3" AutomationProperties.AutomationId="RestoreOutlookCalendar" />
+                        <CheckBox IsChecked="{Binding IncludeContacts, Mode=TwoWay}" IsEnabled="{Binding CanContacts}" Content="Contacts" Margin="0,3" AutomationProperties.AutomationId="RestoreOutlookContacts" />
+                        <CheckBox IsChecked="{Binding IncludeAutocomplete, Mode=TwoWay}" IsEnabled="{Binding CanAutocomplete}" Content="Autocomplétion" Margin="0,3" AutomationProperties.AutomationId="RestoreOutlookAutocomplete" />
+                        <TextBlock Text="Tout le contenu de chaque catégorie cochée est restauré. Une catégorie grisée est absente de la sauvegarde." Style="{StaticResource Small}" TextWrapping="Wrap" Margin="0,4,0,0" />
+                    </StackPanel>
 
                     <Separator />
                     <DockPanel>
@@ -157,10 +168,11 @@
                                        Style="{StaticResource Small}" TextWrapping="Wrap" />
                         </StackPanel>
                     </CheckBox>
+                    </StackPanel>
                 </StackPanel>
             </Border>
 
-            <Border Style="{StaticResource InfoBanner}" Margin="0,14,0,0" Visibility="{Binding IsPresent, Converter={StaticResource Visible}}">
+            <Border Style="{StaticResource InfoBanner}" Margin="0,10,0,0" Visibility="{Binding IsPresent, Converter={StaticResource Visible}}">
                 <DockPanel>
                     <TextBlock Style="{StaticResource Icon}" Text="&#xE946;" Foreground="{StaticResource Accent}" VerticalAlignment="Top" Margin="0,1,10,0" />
                     <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TextMuted}"

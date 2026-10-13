@@ -162,6 +162,21 @@ public static class BackupReader
                 w.Scope is null ? null : w.Scope.Equals("currentUser", StringComparison.OrdinalIgnoreCase)));
         }
 
+        // Network drives: metadata only (no file). Only a drive letter and a UNC share are accepted.
+        var drives = new List<BackupNetworkDrive>();
+        foreach (var d in m.NetworkDrives?.OfType<ManifestNetworkDrive>() ?? [])
+        {
+            var letter = d.Letter?.Trim().ToUpperInvariant();
+            if (!NetworkDriveService.IsValidLetter(letter) || !NetworkDriveService.IsValidRemotePath(d.RemotePath))
+            {
+                warnings.Add($"Lecteur réseau ignoré : lettre ou chemin invalide ({d.Letter} → {d.RemotePath}).");
+                continue;
+            }
+            if (drives.Any(x => x.Letter == letter)) continue;
+            var user = string.IsNullOrWhiteSpace(d.UserName) || d.UserName.Length > 256 || d.UserName.Any(char.IsControl) ? null : d.UserName.Trim();
+            drives.Add(new BackupNetworkDrive(letter!, d.RemotePath, user, d.Persistent));
+        }
+
         BackupWallpaper? wallpaper = null;
         if (m.Wallpaper is { } wp && Resolve(wp.RelativePath, "Fond d'écran", true) is { } wpFull)
             wallpaper = new BackupWallpaper(wp.RelativePath, wpFull, new FileInfo(wpFull).Length);
@@ -202,6 +217,7 @@ public static class BackupReader
             Signatures = signatures,
             Browsers = browsers,
             Wifi = wifi,
+            NetworkDrives = drives,
             Wallpaper = wallpaper,
             Printers = printers,
             Mailbox = mailbox,

@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="clr-namespace:DataBridge.App.ViewModels">
     <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Margin="28,24,28,24">
+        <StackPanel Margin="24,14,24,18">
             <DockPanel>
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Top" Visibility="{Binding IsPresent, Converter={StaticResource Visible}}">
                     <Button Style="{StaticResource GhostButton}" Content="Tout cocher" Command="{Binding SelectAllCommand}" />
@@ -16,7 +16,7 @@
                 </StackPanel>
             </DockPanel>
 
-            <Border Style="{StaticResource Card}" Margin="0,18,0,0" Visibility="{Binding IsPresent, Converter={StaticResource Hidden}}"
+            <Border Style="{StaticResource Card}" Margin="0,12,0,0" Visibility="{Binding IsPresent, Converter={StaticResource Hidden}}"
                     AutomationProperties.AutomationId="PrintersAbsent">
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Style="{StaticResource Icon}" Text="&#xE946;" FontSize="14" Foreground="{StaticResource TextTertiary}" Margin="0,1,10,0" />
@@ -25,7 +25,7 @@
             </Border>
 
             <StackPanel Visibility="{Binding IsPresent, Converter={StaticResource Visible}}">
-                <Border Style="{StaticResource Banner}" Margin="0,16,0,0" Visibility="{Binding NeedsAdmin, Converter={StaticResource Visible}}"
+                <Border Style="{StaticResource Banner}" Margin="0,12,0,0" Visibility="{Binding NeedsAdmin, Converter={StaticResource Visible}}"
                         AutomationProperties.AutomationId="PrintersAdminBanner">
                     <DockPanel>
                         <TextBlock Style="{StaticResource Icon}" Text="&#xE7EF;" Foreground="{StaticResource Warning}" VerticalAlignment="Top" Margin="0,1,10,0" />
@@ -37,17 +37,17 @@
                     </DockPanel>
                 </Border>
 
-                <Border Style="{StaticResource Card}" Margin="0,14,0,0" Visibility="{Binding IsAnalyzing, Converter={StaticResource Visible}}">
+                <Border Style="{StaticResource Card}" Margin="0,10,0,0" Visibility="{Binding IsAnalyzing, Converter={StaticResource Visible}}">
                     <TextBlock Text="Vérification de la sauvegarde et analyse des imprimantes de ce PC (rien n'est modifié)…" Foreground="{StaticResource TextMuted}" />
                 </Border>
-                <Border Style="{StaticResource DangerBanner}" Margin="0,14,0,0" Visibility="{Binding Message, Converter={StaticResource NotEmpty}}">
+                <Border Style="{StaticResource DangerBanner}" Margin="0,10,0,0" Visibility="{Binding Message, Converter={StaticResource NotEmpty}}">
                     <DockPanel>
                         <TextBlock Style="{StaticResource Icon}" Text="&#xE783;" Margin="0,0,10,0" VerticalAlignment="Top" />
                         <TextBlock Text="{Binding Message}" TextWrapping="Wrap" AutomationProperties.AutomationId="RestorePrintersMessage" />
                     </DockPanel>
                 </Border>
 
-                <Border Margin="0,14,0,0" Padding="0">
+                <Border Margin="0,10,0,0" Padding="0">
                     <Border.Style>
                         <Style TargetType="Border" BasedOn="{StaticResource Card}">
                             <Style.Triggers>
@@ -106,7 +106,7 @@
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
 
-                <Border Style="{StaticResource InfoBanner}" Margin="0,14,0,0">
+                <Border Style="{StaticResource InfoBanner}" Margin="0,10,0,0">
                     <DockPanel>
                         <TextBlock Style="{StaticResource Icon}" Text="&#xE946;" Foreground="{StaticResource Accent}" VerticalAlignment="Top" Margin="0,1,10,0" />
                         <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TextMuted}"

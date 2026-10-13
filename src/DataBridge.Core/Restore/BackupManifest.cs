@@ -26,7 +26,7 @@ public sealed class BackupManifest
     public ManifestSource Source { get; set; } = new();
     public ManifestTotals Totals { get; set; } = new();
     public ManifestOptions Options { get; set; } = new();
-    /// <summary>Categories present in the backup (personalFolders, additionalItems, outlookSignatures, browsers, wifi, wallpaper).</summary>
+    /// <summary>Categories present in the backup (personalFolders, additionalItems, outlookSignatures, browsers, wifi, networkDrives, wallpaper...).</summary>
     public List<string> Categories { get; set; } = [];
     public List<ManifestPersonalFolder> PersonalFolders { get; set; } = [];
     public List<ManifestAdditionalItem> AdditionalItems { get; set; } = [];
@@ -38,6 +38,8 @@ public sealed class BackupManifest
     public ManifestPrinters? Printers { get; set; }
     /// <summary>2.1: Outlook mailbox exported to a new PST. Optional: older readers ignore it.</summary>
     public ManifestOutlookMailbox? OutlookMailbox { get; set; }
+    /// <summary>2.2: network drives of the session (letter, share, account name). Optional: older readers ignore it.</summary>
+    public List<ManifestNetworkDrive> NetworkDrives { get; set; } = [];
 
     public static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -145,6 +147,17 @@ public sealed class ManifestWifiProfile
     public bool KeyIncluded { get; set; }
     /// <summary>allUsers / currentUser.</summary>
     public string? Scope { get; set; }
+}
+
+/// <summary>A network drive: letter, UNC share and account name. The password is never readable, so never saved.</summary>
+public sealed class ManifestNetworkDrive
+{
+    /// <summary>"Z:".</summary>
+    public string Letter { get; set; } = "";
+    public string RemotePath { get; set; } = "";
+    /// <summary>Account given when the drive was connected; absent = the session's own credentials.</summary>
+    public string? UserName { get; set; }
+    public bool Persistent { get; set; } = true;
 }
 
 public sealed class ManifestWallpaper

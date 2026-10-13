@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- Same version as DataBridge.App (AppInfo.Version, manifest, logs). -->
-    <Version>2.1.2</Version>
+    <Version>2.2.0</Version>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
 
     <NoWarn>$(NoWarn);SYSLIB1054;CA1416</NoWarn>

@@ -1,0 +1,82 @@
+<UserControl x:Class="DataBridge.App.Views.RestoreNetworkDrivesView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:DataBridge.App.ViewModels">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="24,14,24,18">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Top" Visibility="{Binding IsPresent, Converter={StaticResource Visible}}">
+                    <Button Style="{StaticResource GhostButton}" Content="Tout cocher" Command="{Binding SelectAllCommand}" />
+                    <Button Style="{StaticResource GhostButton}" Content="Tout décocher" Command="{Binding SelectNoneCommand}" />
+                </StackPanel>
+                <StackPanel>
+                    <TextBlock Text="{Binding PageTitle}" Style="{StaticResource PageTitle}" />
+                    <TextBlock Style="{StaticResource PageSubtitle}"
+                               Text="Lecteurs réseau de la sauvegarde reconnectés sur ce PC avec la même lettre, le même partage et le même compte, avec les droits de la session. Une lettre déjà utilisée sur ce PC n'est jamais modifiée." />
+                </StackPanel>
+            </DockPanel>
+
+            <Border Style="{StaticResource Card}" Margin="0,12,0,0" Visibility="{Binding IsPresent, Converter={StaticResource Hidden}}"
+                    AutomationProperties.AutomationId="NetworkDrivesAbsent">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Style="{StaticResource Icon}" Text="&#xE946;" FontSize="14" Foreground="{StaticResource TextTertiary}" Margin="0,1,10,0" />
+                    <TextBlock Text="Non présent dans cette sauvegarde." Foreground="{StaticResource TextMuted}" />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}" Margin="0,12,0,0" Padding="0" Visibility="{Binding IsPresent, Converter={StaticResource Visible}}">
+                <ItemsControl ItemsSource="{Binding Items}" AutomationProperties.AutomationId="RestoreNetworkDrivesList">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:RestoreNetworkDriveItemViewModel}">
+                            <Border BorderBrush="{StaticResource Border}" BorderThickness="0,0,0,1" Padding="16,11">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}" VerticalAlignment="Center" AutomationProperties.Name="{Binding Letter}"
+                                              AutomationProperties.AutomationId="RestoreNetworkDriveCheck" />
+                                    <StackPanel Grid.Column="1" Margin="4,0,0,0" VerticalAlignment="Center">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Style="{StaticResource Icon}" Text="&#xE8CE;" FontSize="14" Foreground="{StaticResource Accent}" Margin="0,0,8,0" />
+                                            <TextBlock Text="{Binding Letter}" FontWeight="SemiBold" Margin="0,0,10,0" />
+                                            <TextBlock Text="{Binding RemotePath}" FontFamily="{StaticResource MonoFont}" FontSize="12" VerticalAlignment="Center" />
+                                            <Border Style="{StaticResource Badge}" Visibility="{Binding AlreadyPresent, Converter={StaticResource Visible}}">
+                                                <TextBlock Text="Déjà connecté sur ce PC" />
+                                            </Border>
+                                        </StackPanel>
+                                        <TextBlock Text="{Binding ConflictText}" Style="{StaticResource Small}" Foreground="{StaticResource Warning}" Margin="22,2,0,0"
+                                                   Visibility="{Binding HasConflict, Converter={StaticResource Visible}}" AutomationProperties.AutomationId="RestoreNetworkDriveConflict" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Style="{StaticResource Icon}" FontSize="12" Text="&#xE77B;" Foreground="{StaticResource TextMuted}" Margin="0,0,6,0" />
+                                        <TextBlock Text="{Binding Account}" FontSize="12" Foreground="{StaticResource TextMuted}" AutomationProperties.AutomationId="RestoreNetworkDriveAccount" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Border>
+
+            <Border Style="{StaticResource Card}" Margin="0,10,0,0" Visibility="{Binding IsPresent, Converter={StaticResource Visible}}">
+                <CheckBox IsChecked="{Binding AskPassword, Mode=TwoWay}" AutomationProperties.AutomationId="NetworkDrivesAskPassword">
+                    <StackPanel>
+                        <TextBlock Text="Demander le mot de passe pendant la restauration si le partage l'exige" FontWeight="SemiBold" TextWrapping="Wrap" />
+                        <TextBlock Text="Windows affiche sa propre fenêtre de connexion, compte déjà rempli. Décoché : un lecteur qui demande un mot de passe n'est pas connecté (à faire ensuite manuellement)."
+                                   Style="{StaticResource Small}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </CheckBox>
+            </Border>
+
+            <Border Style="{StaticResource InfoBanner}" Margin="0,10,0,0">
+                <DockPanel>
+                    <TextBlock Style="{StaticResource Icon}" Text="&#xE72E;" Foreground="{StaticResource Accent}" VerticalAlignment="Top" Margin="0,1,10,0" />
+                    <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TextMuted}"
+                               Text="Les mots de passe ne font pas partie de la sauvegarde (Windows ne permet pas de les lire). Celui saisi dans la fenêtre Windows ne passe pas par DataBridge et n'est jamais écrit dans le journal. Un partage inaccessible depuis ce PC (serveur absent, VPN non connecté) est signalé sans rien modifier." />
+                </DockPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

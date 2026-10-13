@@ -124,6 +124,8 @@ public sealed class CopyEngine
 
             if (!StopRequested && _plan.Wifi is { } wifi)
                 RunWifi(wifi);
+            if (!StopRequested && _plan.NetworkDrives.Count > 0)
+                RunNetworkDrives(_plan.NetworkDrives);
             if (!StopRequested && _plan.Printers is { } printers)
                 RunPrinters(printers);
             if (!StopRequested && _plan.Outlook is { } mailbox)
@@ -309,6 +311,14 @@ public sealed class CopyEngine
             _result.Wifi.Add(r);
             _progress.WifiDone++;
         }
+    }
+
+    /// <summary>Network drives: letter, share and account name are recorded in the manifest and the log (no file, no password).</summary>
+    private void RunNetworkDrives(IReadOnlyList<NetworkDriveInfo> drives)
+    {
+        _progress.Category = Categories.Network;
+        _progress.Item = "Lecteurs réseau";
+        _result.NetworkDrives.AddRange(drives);
     }
 
     /// <summary>Printers → Imprimantes\Imprimantes.prnbak (read-only export, session rights). A failure is reported, the backup goes on.</summary>

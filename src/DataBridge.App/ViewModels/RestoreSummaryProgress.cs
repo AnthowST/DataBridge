@@ -26,7 +26,7 @@ public sealed class RestoreSummaryViewModel : RestorePageViewModel
     private IReadOnlyList<string> _issues = [];
     private IReadOnlyList<string> _warnings = [];
 
-    public RestoreSummaryViewModel(RestoreViewModel restore) : base(restore, 9, "Résumé", "", "R_Nav_Summary")
+    public RestoreSummaryViewModel(RestoreViewModel restore) : base(restore, 10, "Résumé", "", "R_Nav_Summary")
     {
         StartCommand = new RelayCommand(() => Restore.StartRestore(), () => CanStart);
         Status = "Vérification avant restauration";
@@ -105,6 +105,18 @@ public sealed class RestoreSummaryViewModel : RestorePageViewModel
     {
         foreach (var c in Restore.Browsers.Cards) c.RefreshRunning();
         Refresh();
+    }
+
+    private static SummaryLine NetworkDrivesLine(RestoreSelection s)
+    {
+        if (s.Backup.NetworkDrives.Count == 0) return new SummaryLine(MarkKind.Off, "Lecteurs réseau", "absent de la sauvegarde");
+        var selected = s.Backup.NetworkDrives.Where(d => s.SelectedNetworkDrives.Contains(d.Letter)).ToList();
+        if (selected.Count == 0) return new SummaryLine(MarkKind.Off, "Lecteurs réseau", "aucun sélectionné");
+        var conflicts = selected.Count(d => s.NetworkDriveState.Conflict(d.Letter, d.RemotePath) != null);
+        var detail = string.Join(", ", selected.Select(d => $"{d.Letter} {d.RemotePath}"))
+                     + (conflicts > 0 ? $" · {conflicts} lettre(s) déjà utilisée(s)" : "")
+                     + (s.AskNetworkPassword ? " · mot de passe demandé si nécessaire" : "");
+        return new SummaryLine(conflicts > 0 ? MarkKind.Warn : MarkKind.Ok, Format.Plural(selected.Count, "lecteur réseau", "lecteurs réseau"), detail);
     }
 
     public override void OnTick()
@@ -191,6 +203,7 @@ public sealed class RestoreSummaryViewModel : RestorePageViewModel
             : wifiCount > 0 ? new SummaryLine(MarkKind.Ok, Format.Plural(wifiCount, "profil Wi-Fi", "profils Wi-Fi"),
                 s.WifiExisting == WifiExistingPolicy.Replace ? "profils existants remplacés" : "profils existants conservés")
             : new SummaryLine(MarkKind.Off, "Profils Wi-Fi", "aucun sélectionné"),
+            NetworkDrivesLine(s),
         ]));
         groups.Add(new SummaryGroup("Windows",
         [
@@ -262,7 +275,7 @@ public sealed class RestoreProgressViewModel : RestorePageViewModel
     private double _speed;
     private TimeSpan _lastSpeedSample;
 
-    public RestoreProgressViewModel(RestoreViewModel restore) : base(restore, 10, "Restauration", "", "R_Nav_Progress")
+    public RestoreProgressViewModel(RestoreViewModel restore) : base(restore, 11, "Restauration", "", "R_Nav_Progress")
     {
         CancelCommand = new RelayCommand(RequestCancel, () => IsRunning && !IsCancelling);
         OpenLogCommand = new RelayCommand(() => Open(_result?.LogPath), () => _result?.LogPath != null);
@@ -309,6 +322,7 @@ public sealed class RestoreProgressViewModel : RestorePageViewModel
     public IReadOnlyList<ResultLine> ResultLines { get; private set; } = [];
     public IReadOnlyList<ResultLine> BrowserLines { get; private set; } = [];
     public IReadOnlyList<ResultLine> WifiLines { get; private set; } = [];
+    public IReadOnlyList<ResultLine> NetworkDriveLines { get; private set; } = [];
     public IReadOnlyList<ResultLine> WindowsLines { get; private set; } = [];
     public IReadOnlyList<ResultLine> OutlookLines { get; private set; } = [];
     public IReadOnlyList<ResultLine> PrinterLines { get; private set; } = [];
@@ -479,6 +493,24 @@ public sealed class RestoreProgressViewModel : RestorePageViewModel
         else wifi.Add(new(MarkKind.Off, "Aucun profil Wi-Fi restauré"));
         WifiLines = wifi;
 
+        var drives = new List<ResultLine>();
+        foreach (var d in r.NetworkDrives)
+            drives.Add(new(d.Outcome switch
+            {
+                NetworkDriveRestoreOutcome.Connected or NetworkDriveRestoreOutcome.AlreadyPresent => MarkKind.Ok,
+                NetworkDriveRestoreOutcome.Failed => MarkKind.Error,
+                _ => MarkKind.Warn,
+            }, $"{d.Letter} : " + d.Outcome switch
+            {
+                NetworkDriveRestoreOutcome.Connected => "connecté",
+                NetworkDriveRestoreOutcome.AlreadyPresent => "déjà connecté",
+                NetworkDriveRestoreOutcome.Conflict => "lettre déjà utilisée",
+                NetworkDriveRestoreOutcome.NotRestored => "non connecté (mot de passe)",
+                _ => "échec (détail dans le journal)",
+            }));
+        if (drives.Count == 0) drives.Add(new(MarkKind.Off, "Aucun lecteur réseau restauré"));
+        NetworkDriveLines = drives;
+
         WindowsLines = r.Wallpaper is { } wp
             ? [new(wp.Applied || (wp.Copied && !wp.ApplyRequested) ? MarkKind.Ok : wp.Copied ? MarkKind.Warn : MarkKind.Error, wp.Applied ? "Fond d'écran appliqué" : wp.Message)]
             : [new(MarkKind.Off, "Fond d'écran non restauré")];
@@ -501,7 +533,7 @@ public sealed class RestoreProgressViewModel : RestorePageViewModel
         foreach (var name in new[]
                  {
                      nameof(IsFinished), nameof(ResultTitle), nameof(ResultSubtitle), nameof(ResultKind), nameof(ResultWarn), nameof(ResultFailed),
-                     nameof(ResultLines), nameof(BrowserLines), nameof(WifiLines), nameof(WindowsLines), nameof(OutlookLines), nameof(PrinterLines),
+                     nameof(ResultLines), nameof(BrowserLines), nameof(WifiLines), nameof(NetworkDriveLines), nameof(WindowsLines), nameof(OutlookLines), nameof(PrinterLines),
                      nameof(KpiFiles), nameof(KpiBytes),
                      nameof(KpiReplaced), nameof(KpiKept), nameof(KpiErrors), nameof(HasErrors), nameof(DurationText), nameof(ControlText),
                      nameof(SafetyText), nameof(LogPath),

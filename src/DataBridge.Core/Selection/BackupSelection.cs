@@ -66,6 +66,10 @@ public sealed class BackupSelection
     /// Kept in memory only, written to Network\WiFi by the backup; never displayed or logged.
     /// </summary>
     public Dictionary<string, string> RecoveredWifiXml { get; } = new(StringComparer.Ordinal);
+    /// <summary>2.2: network drives of the session (letter, share, account name; never a password).</summary>
+    public List<NetworkDriveInfo> NetworkDrives { get; } = [];
+    /// <summary>Checked network drives (by letter, "Z:").</summary>
+    public HashSet<string> SelectedNetworkDrives { get; } = new(StringComparer.OrdinalIgnoreCase);
     /// <summary>Outlook mailbox to export (2.1): chosen on the Outlook page, null when none was chosen.</summary>
     public Outlook.OutlookBackupJob? OutlookMailbox { get; set; }
     /// <summary>Printers of this PC (2.1), read on the Imprimantes page; null until then.</summary>
@@ -282,8 +286,11 @@ public sealed class BackupSelection
             seed.Wallpaper = (wp, wallpaperJob);
         }
 
-        // 6. Wi-Fi
+        // 6. Wi-Fi and network drives
         var wifi = WifiProfiles.Where(p => SelectedWifi.Contains(p.Name)).ToList();
+        var drives = NetworkDrives.Where(d => SelectedNetworkDrives.Contains(d.Letter)).ToList();
+        foreach (var d in NetworkDrives.Where(d => !SelectedNetworkDrives.Contains(d.Letter)))
+            notSelected.Add($"Lecteur réseau {d.Letter} ({d.RemotePath}) : non sélectionné");
 
         // 7. Printers (export to a .prnbak, read-only) and Outlook mailbox (new PST), after the files.
         var printerIds = PrinterInventory?.Printers.Where(p => SelectedPrinters.Contains(p.Entry.Id)).Select(p => p.Entry.Id).ToList() ?? [];
@@ -301,6 +308,7 @@ public sealed class BackupSelection
             Wifi = wifi.Count > 0
                 ? new WifiJob(wifi, @"Network\WiFi", wifi.Where(p => RecoveredWifiXml.ContainsKey(p.Name)).ToDictionary(p => p.Name, p => RecoveredWifiXml[p.Name]))
                 : null,
+            NetworkDrives = drives,
             Printers = printerIds.Count > 0 ? new PrinterTransfer.PrinterBackupJob(PrinterInventory!, printerIds) : null,
             Outlook = mailbox,
             SkipCloudOnly = SkipCloudOnly,

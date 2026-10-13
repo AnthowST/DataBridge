@@ -1,0 +1,81 @@
+<UserControl x:Class="DataBridge.App.Views.SelectionHubView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:DataBridge.App.ViewModels">
+    <!-- Step 3 "Quoi" (backup and restore): one tile per category, checked by default, "Personnaliser" opens the detailed page. -->
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="24,14,24,18">
+            <TextBlock Text="{Binding PageTitle}" Style="{StaticResource PageTitle}" AutomationProperties.AutomationId="HubTitle" />
+            <TextBlock Text="{Binding Subtitle}" Style="{StaticResource PageSubtitle}" />
+            <TextBlock Text="{Binding ScanStatus}" Style="{StaticResource Small}" Margin="0,4,0,0" Visibility="{Binding ScanStatus, Converter={StaticResource NotEmpty}}" />
+
+            <ItemsControl ItemsSource="{Binding Tiles}" Margin="0,12,-10,0" Focusable="False" AutomationProperties.AutomationId="HubTiles">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <UniformGrid Columns="3" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type vm:HubTile}">
+                        <Border x:Name="Tile" Margin="0,0,10,10" Padding="12,10,12,6" CornerRadius="10" BorderThickness="1.5"
+                                Background="{StaticResource SelectionAccentSoft}" BorderBrush="{StaticResource SelectionAccentSoftBorder}">
+                            <DockPanel>
+                                <Button DockPanel.Dock="Bottom" Style="{StaticResource GhostButton}" Command="{Binding OpenCommand}" HorizontalAlignment="Left"
+                                        Margin="22,4,0,0" Padding="8,4" AutomationProperties.AutomationId="{Binding AutomationId}"
+                                        AutomationProperties.Name="{Binding Title, StringFormat='{}{0} : personnaliser'}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding OpenLabel}" />
+                                        <TextBlock Style="{StaticResource Icon}" Text="&#xE76C;" FontSize="10" Margin="6,1,0,0" />
+                                    </StackPanel>
+                                </Button>
+                                <TextBlock x:Name="AttentionText" DockPanel.Dock="Bottom" Text="{Binding Attention}" TextWrapping="Wrap" FontSize="12"
+                                           Foreground="{StaticResource WarningAccent}" Margin="30,6,0,0"
+                                           Visibility="{Binding HasAttention, Converter={StaticResource Visible}}" AutomationProperties.AutomationId="TileAttention" />
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <!-- Hidden (not collapsed) for "Autres fichiers": every title stays aligned. -->
+                                    <CheckBox x:Name="Check" IsChecked="{Binding IsChecked, Mode=TwoWay}" IsThreeState="False" IsEnabled="{Binding IsAvailable}"
+                                              VerticalAlignment="Top" Margin="0,2,0,0" AutomationProperties.Name="{Binding Title}" AutomationProperties.AutomationId="TileCheck" />
+                                    <TextBlock Grid.Column="1" Style="{StaticResource Icon}" Text="{Binding Glyph}" FontSize="16" Foreground="{StaticResource TextStrong}"
+                                               VerticalAlignment="Top" Margin="4,4,10,0" />
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="14" Foreground="{StaticResource TextStrong}" TextWrapping="Wrap" />
+                                        <TextBlock Text="{Binding Detail}" Style="{StaticResource Small}" TextWrapping="Wrap" Margin="0,2,0,0"
+                                                   AutomationProperties.AutomationId="TileDetail" />
+                                    </StackPanel>
+                                </Grid>
+                            </DockPanel>
+                        </Border>
+                        <DataTemplate.Triggers>
+                            <DataTrigger Binding="{Binding IsChecked}" Value="False">
+                                <Setter TargetName="Tile" Property="Background" Value="{StaticResource SurfacePrimary}" />
+                                <Setter TargetName="Tile" Property="BorderBrush" Value="{StaticResource BorderPrimary}" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding HasCheckBox}" Value="False">
+                                <Setter TargetName="Check" Property="Visibility" Value="Hidden" />
+                                <Setter TargetName="Tile" Property="Background" Value="{StaticResource SurfacePrimary}" />
+                                <Setter TargetName="Tile" Property="BorderBrush" Value="{StaticResource BorderStrong}" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding HasAttention}" Value="True">
+                                <Setter TargetName="Tile" Property="Background" Value="{StaticResource WarningSoft}" />
+                                <Setter TargetName="Tile" Property="BorderBrush" Value="{StaticResource WarningBorder}" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsAvailable}" Value="False">
+                                <Setter TargetName="Tile" Property="Opacity" Value="0.55" />
+                                <Setter TargetName="Tile" Property="Background" Value="{StaticResource SurfacePrimary}" />
+                                <Setter TargetName="Tile" Property="BorderBrush" Value="{StaticResource BorderPrimary}" />
+                            </DataTrigger>
+                        </DataTemplate.Triggers>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <TextBlock Text="{Binding AbsentText}" Style="{StaticResource Small}" TextWrapping="Wrap" Margin="0,4,0,0"
+                       Visibility="{Binding HasAbsent, Converter={StaticResource Visible}}" AutomationProperties.AutomationId="HubAbsent" />
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

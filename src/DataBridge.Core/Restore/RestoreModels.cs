@@ -107,6 +107,7 @@ public sealed class RestoreResult
 
     public List<RestoreItemResult> Items { get; } = [];
     public List<WifiRestoreResult> Wifi { get; } = [];
+    public List<NetworkDriveRestoreResult> NetworkDrives { get; } = [];
     public WallpaperRestoreResult? Wallpaper { get; set; }
     /// <summary>Printers restored (2.1), null when none was selected.</summary>
     public PrinterTransfer.PrinterRestoreResult? Printers { get; set; }
@@ -116,6 +117,7 @@ public sealed class RestoreResult
     public int Count(IssueKind kind) => IssueCounts.TryGetValue(kind, out var n) ? n : 0;
 
     public bool HasWarnings => ErrorCount > 0 || Wifi.Any(w => w.Outcome is WifiRestoreOutcome.NotRestored or WifiRestoreOutcome.Failed)
+                               || NetworkDrives.Any(d => d.Outcome is not (NetworkDriveRestoreOutcome.Connected or NetworkDriveRestoreOutcome.AlreadyPresent))
                                || Wallpaper is { Applied: false, ApplyRequested: true } || SkippedCount > 0 || InterruptedFiles > 0
                                || Printers is { Ok: false } || Outlook is { Ok: false };
 }

@@ -23,7 +23,7 @@ public abstract class RestorePageViewModel(RestoreViewModel restore, int number,
 {
     protected RestoreViewModel Restore { get; } = restore;
     protected RestoreSelection? Sel => Restore.Selection;
-    public string PageTitle => $"{Number}. {Title}";
+    public virtual string PageTitle => Title;
 }
 
 // ====================================================================== 1. Sauvegarde
@@ -51,6 +51,7 @@ public sealed class RestoreSourceViewModel : RestorePageViewModel
     public ICommand ChooseCommand { get; }
     public ICommand UseCommand { get; }
     public ICommand UseCandidateCommand { get; }
+    public override string PageTitle => "Quelle sauvegarde voulez-vous restaurer ?";
 
     public string? SelectedPath { get => _selectedPath; private set => Set(ref _selectedPath, value); }
     public bool IsChecking { get => _isChecking; private set => Set(ref _isChecking, value); }
@@ -245,6 +246,11 @@ public sealed class RestoreAdditionalViewModel : RestorePageViewModel
         Restore.SelectionChanged();
     }
 
+    public void SetAll(bool value)
+    {
+        foreach (var item in Items) item.IsSelected = value;
+    }
+
     public void ApplyTotals(PlanTotals totals)
     {
         foreach (var item in Items.Where(i => !i.IsFile))
@@ -274,7 +280,7 @@ public sealed class RestoreOutlookViewModel : RestorePageViewModel
 
     public RestoreOutlookViewModel(RestoreViewModel restore) : base(restore, 4, "Outlook", "", "R_Nav_Outlook")
     {
-        ListStoresCommand = new RelayCommand(ListStores, () => !IsBusy && HasMailbox);
+        ListStoresCommand = new RelayCommand(ListStores, () => !IsBusy && HasMailbox && IncludeMailbox);
     }
 
     // ---------------------------------------------------------------- signatures
@@ -317,6 +323,25 @@ public sealed class RestoreOutlookViewModel : RestorePageViewModel
         }
     }
     public string PstText => Mailbox?.Source.PstRelative ?? "aucun PST (autocomplétion seulement)";
+
+    /// <summary>
+    /// Main switch of the mailbox card (checked by default): unchecked, nothing of the mailbox is restored, the options
+    /// below are hidden and Outlook is not read. Checked again, the mailboxes of this PC are listed as on the first visit.
+    /// </summary>
+    public bool IncludeMailbox
+    {
+        get => Mailbox?.IncludeMailbox == true;
+        set
+        {
+            if (Mailbox is null || Mailbox.IncludeMailbox == value) return;
+            Mailbox.IncludeMailbox = value;
+            OnPropertyChanged();
+            CommandManager.InvalidateRequerySuggested();
+            if (value) OnActivated();
+            NotifyMailbox();
+            Restore.SelectionChanged();
+        }
+    }
 
     public bool CanMails => Available(OutlookCategories.Mails);
     public bool CanCalendar => Available(OutlookCategories.Calendar);
@@ -385,7 +410,7 @@ public sealed class RestoreOutlookViewModel : RestorePageViewModel
     /// <summary>The mailboxes of this PC are listed automatically when the page is shown (the target is still chosen explicitly).</summary>
     public override void OnActivated()
     {
-        if (!HasMailbox || _listedOnce || IsBusy || TestNoOutlook) return;
+        if (!HasMailbox || !IncludeMailbox || _listedOnce || IsBusy || TestNoOutlook) return;
         if (!OutlookSession.IsOutlookRunning())
         {
             MailboxMessage = "Outlook classique n'est pas ouvert : ouvrez-le, puis cliquez sur « Lister les boîtes Outlook ».";
@@ -448,8 +473,8 @@ public sealed class RestoreOutlookViewModel : RestorePageViewModel
     {
         foreach (var n in new[]
                  {
-                     nameof(IncludeMails), nameof(IncludeCalendar), nameof(IncludeContacts), nameof(IncludeAutocomplete), nameof(TargetText),
-                     nameof(IntoNewFolder), nameof(MergeFolders), nameof(ReplaceAutocompleteCache),
+                     nameof(IncludeMailbox), nameof(IncludeMails), nameof(IncludeCalendar), nameof(IncludeContacts), nameof(IncludeAutocomplete),
+                     nameof(TargetText), nameof(IntoNewFolder), nameof(MergeFolders), nameof(ReplaceAutocompleteCache),
                  })
             OnPropertyChanged(n);
         UpdateSidebar();
@@ -476,7 +501,7 @@ public sealed class RestoreOutlookViewModel : RestorePageViewModel
     private void UpdateSidebar()
     {
         var signatures = !HasSignatures ? "" : Include ? Format.Plural(Names.Count, "signature", "signatures") : "signatures non incluses";
-        var mailbox = Mailbox is null ? "" : !Mailbox.Include ? "boîte non incluse" : Mailbox.TargetStoreId is null ? "boîte : destination à choisir" : "boîte → " + Mailbox.TargetName;
+        var mailbox = Mailbox is null ? "" : !Mailbox.Include ? "boîte non restaurée" : Mailbox.TargetStoreId is null ? "boîte : destination à choisir" : "boîte → " + Mailbox.TargetName;
         Status = !IsPresent ? "Absent de la sauvegarde" : string.Join(" · ", new[] { signatures, mailbox }.Where(s => s.Length > 0));
         IsDone = Include || Mailbox is { Include: true, TargetStoreId: not null };
     }
@@ -612,6 +637,11 @@ public sealed class RestoreBrowsersViewModel : RestorePageViewModel
         Restore.SelectionChanged();
     }
 
+    public void SetAll(bool value)
+    {
+        foreach (var p in Cards.SelectMany(c => c.Profiles)) p.IsSelected = value;
+    }
+
     public override void OnTick()
     {
         if (DateTime.Now - _lastRunningCheck < TimeSpan.FromSeconds(3)) return;
@@ -711,7 +741,7 @@ public sealed class RestoreWifiViewModel : RestorePageViewModel
         Restore.SelectionChanged();
     }
 
-    private void SetAll(bool value)
+    public void SetAll(bool value)
     {
         foreach (var item in Items) item.IsSelected = value;
     }
@@ -733,9 +763,93 @@ public sealed class RestoreWifiViewModel : RestorePageViewModel
     }
 }
 
-// ====================================================================== 7. Fond d'écran
+// ====================================================================== 7. Lecteurs réseau (2.2)
 
-public sealed class RestoreWallpaperViewModel(RestoreViewModel restore) : RestorePageViewModel(restore, 7, "Fond d'écran", "", "R_Nav_Wallpaper")
+public sealed class RestoreNetworkDriveItemViewModel(BackupNetworkDrive drive, RestoreNetworkDrivesViewModel owner) : ObservableObject
+{
+    public BackupNetworkDrive Drive { get; } = drive;
+    public string Letter => Drive.Letter;
+    public string RemotePath => Drive.RemotePath;
+    public string Account => Drive.AccountLabel;
+    public bool AlreadyPresent => owner.State.IsAlreadyMapped(Drive.Letter, Drive.RemotePath);
+    public string? ConflictText => owner.State.Conflict(Drive.Letter, Drive.RemotePath) is { } c ? char.ToUpperInvariant(c[0]) + c[1..] : null;
+    public bool HasConflict => ConflictText != null;
+
+    public bool IsSelected
+    {
+        get => owner.IsSelected(Drive);
+        set
+        {
+            owner.SetSelected(Drive, value);
+            OnPropertyChanged();
+        }
+    }
+}
+
+public sealed class RestoreNetworkDrivesViewModel : RestorePageViewModel
+{
+    public RestoreNetworkDrivesViewModel(RestoreViewModel restore) : base(restore, 7, "Lecteurs réseau", "", "R_Nav_NetworkDrives")
+    {
+        SelectAllCommand = new RelayCommand(() => SetAll(true));
+        SelectNoneCommand = new RelayCommand(() => SetAll(false));
+        Status = "";
+    }
+
+    public ICommand SelectAllCommand { get; }
+    public ICommand SelectNoneCommand { get; }
+    public ObservableCollection<RestoreNetworkDriveItemViewModel> Items { get; } = [];
+    public bool IsPresent => Items.Count > 0;
+    public NetworkDriveEnvironment State => Sel?.NetworkDriveState ?? NetworkDriveEnvironment.Empty;
+
+    public bool AskPassword
+    {
+        get => Sel?.AskNetworkPassword != false;
+        set
+        {
+            if (Sel is null) return;
+            Sel.AskNetworkPassword = value;
+            OnPropertyChanged();
+            Restore.SelectionChanged();
+        }
+    }
+
+    public void Load()
+    {
+        Items.Clear();
+        foreach (var d in Sel!.Backup.NetworkDrives) Items.Add(new RestoreNetworkDriveItemViewModel(d, this));
+        OnPropertyChanged(nameof(IsPresent));
+        OnPropertyChanged(nameof(AskPassword));
+        UpdateSidebar();
+    }
+
+    public bool IsSelected(BackupNetworkDrive d) => Sel?.SelectedNetworkDrives.Contains(d.Letter) == true;
+
+    public void SetSelected(BackupNetworkDrive d, bool value)
+    {
+        if (Sel is null) return;
+        if (value) Sel.SelectedNetworkDrives.Add(d.Letter);
+        else Sel.SelectedNetworkDrives.Remove(d.Letter);
+        UpdateSidebar();
+        Restore.SelectionChanged();
+    }
+
+    public void SetAll(bool value)
+    {
+        foreach (var item in Items) item.IsSelected = value;
+    }
+
+    private void UpdateSidebar()
+    {
+        if (Items.Count == 0) { Status = "Absent de la sauvegarde"; IsDone = false; return; }
+        var n = Items.Count(i => i.IsSelected);
+        Status = $"{n} / {Items.Count} lecteur(s)";
+        IsDone = n > 0;
+    }
+}
+
+// ====================================================================== 8. Fond d'écran
+
+public sealed class RestoreWallpaperViewModel(RestoreViewModel restore) : RestorePageViewModel(restore, 8, "Fond d'écran", "", "R_Nav_Wallpaper")
 {
     private ImageSource? _thumbnail;
 
@@ -794,7 +908,7 @@ public sealed class RestoreWallpaperViewModel(RestoreViewModel restore) : Restor
     }
 }
 
-// ====================================================================== 8. Imprimantes (2.1)
+// ====================================================================== 9. Imprimantes (2.1)
 
 public sealed class RestorePrinterItemViewModel(PrinterPlan plan, RestorePrintersViewModel owner) : ObservableObject
 {
@@ -833,7 +947,7 @@ public sealed class RestorePrintersViewModel : RestorePageViewModel
     private PrinterRestoreSource? _source;
     private IReadOnlyList<string> _notes = [];
 
-    public RestorePrintersViewModel(RestoreViewModel restore) : base(restore, 8, "Imprimantes", "", "R_Nav_Printers")
+    public RestorePrintersViewModel(RestoreViewModel restore) : base(restore, 9, "Imprimantes", "", "R_Nav_Printers")
     {
         SelectAllCommand = new RelayCommand(() => SetAll(true));
         SelectNoneCommand = new RelayCommand(() => SetAll(false));
@@ -897,7 +1011,7 @@ public sealed class RestorePrintersViewModel : RestorePageViewModel
         Restore.SelectionChanged();
     }
 
-    private void SetAll(bool value)
+    public void SetAll(bool value)
     {
         foreach (var item in Items) item.IsSelected = value;
     }

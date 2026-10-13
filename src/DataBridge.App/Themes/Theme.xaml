@@ -22,8 +22,8 @@
         <Setter Property="FontSize" Value="13" />
         <Setter Property="Foreground" Value="{StaticResource TextSecondary}" />
         <Setter Property="TextWrapping" Value="Wrap" />
-        <Setter Property="LineHeight" Value="19" />
-        <Setter Property="Margin" Value="0,5,0,0" />
+        <Setter Property="LineHeight" Value="18" />
+        <Setter Property="Margin" Value="0,3,0,0" />
     </Style>
     <Style x:Key="SectionTitle" TargetType="TextBlock">
         <Setter Property="FontSize" Value="14" />
@@ -62,7 +62,7 @@
         <Setter Property="BorderBrush" Value="{StaticResource BorderPrimary}" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="CornerRadius" Value="10" />
-        <Setter Property="Padding" Value="18" />
+        <Setter Property="Padding" Value="16,13" />
     </Style>
     <Style x:Key="IconTile" TargetType="Border">
         <Setter Property="Width" Value="36" />
@@ -74,7 +74,7 @@
     </Style>
     <Style x:Key="Banner" TargetType="Border">
         <Setter Property="CornerRadius" Value="8" />
-        <Setter Property="Padding" Value="14,10" />
+        <Setter Property="Padding" Value="12,8" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="Background" Value="{StaticResource WarningSoft}" />
         <Setter Property="BorderBrush" Value="{StaticResource WarningBorder}" />
@@ -705,7 +705,7 @@
 
     <Style TargetType="Separator">
         <Setter Property="Background" Value="{StaticResource BorderPrimary}" />
-        <Setter Property="Margin" Value="0,12" />
+        <Setter Property="Margin" Value="0,10" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Separator">

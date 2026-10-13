@@ -121,6 +121,7 @@ public sealed class RestoreEngine
             }
 
             if (!StopRequested) RunWifi();
+            if (!StopRequested) RunNetworkDrives();
             if (!StopRequested && _plan.Wallpaper is { } wallpaper) RunWallpaper(wallpaper);
             if (!StopRequested && _plan.PrintersToRestore.Count > 0) RunPrinters(_plan.Printers!);
             if (!StopRequested && _plan.Outlook is { } outlook) RunOutlook(outlook);
@@ -448,6 +449,30 @@ public sealed class RestoreEngine
             };
             // Name only: the key possibly contained in the XML is never written anywhere.
             Issue(kind, severity, "Wi-Fi « " + w.Profile.Name + " »", r.Message);
+        }
+    }
+
+    /// <summary>Network drives: one connection per letter, never over a letter already used by something else.</summary>
+    private void RunNetworkDrives()
+    {
+        if (_plan.NetworkDrives.Count == 0) return;
+        _progress.Category = RestoreCategories.Network;
+        _progress.Item = "Lecteurs réseau";
+        var environment = Detection.NetworkDriveService.Inspect(); // fresh: the letters may have changed since the summary
+        foreach (var d in _plan.NetworkDrives)
+        {
+            if (StopRequested) break;
+            _progress.CurrentFile = $"Lecteur réseau {d.Letter} → {d.RemotePath}";
+            var r = NetworkDriveRestoreService.Connect(d, environment, _plan.OwnerWindow, _plan.AskNetworkPassword);
+            _result.NetworkDrives.Add(r);
+            var (kind, severity) = r.Outcome switch
+            {
+                NetworkDriveRestoreOutcome.Connected => (IssueKind.Restored, IssueSeverity.Info),
+                NetworkDriveRestoreOutcome.AlreadyPresent => (IssueKind.KeptExisting, IssueSeverity.Info),
+                NetworkDriveRestoreOutcome.Conflict or NetworkDriveRestoreOutcome.NotRestored => (IssueKind.NotRestored, IssueSeverity.Ignored),
+                _ => (IssueKind.Other, IssueSeverity.Error),
+            };
+            Issue(kind, severity, $"Lecteur réseau {d.Letter} ({d.RemotePath})", r.Message);
         }
     }
 

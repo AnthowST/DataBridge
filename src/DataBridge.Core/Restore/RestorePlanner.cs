@@ -201,6 +201,11 @@ public static class RestorePlanner
         foreach (var w in backup.Wifi.Where(w => !s.SelectedWifi.Contains(w.RelativePath)))
             notSelected.Add($"Wi-Fi {w.Name} : non sélectionné");
 
+        // 5b. Network drives (same letter, same share, same account name; the password is asked by Windows if needed)
+        var drives = backup.NetworkDrives.Where(d => s.SelectedNetworkDrives.Contains(d.Letter)).ToList();
+        foreach (var d in backup.NetworkDrives.Where(d => !s.SelectedNetworkDrives.Contains(d.Letter)))
+            notSelected.Add($"Lecteur réseau {d.Letter} ({d.RemotePath}) : non sélectionné");
+
         // 6. Wallpaper
         WallpaperRestoreItem? wallpaper = null;
         if (backup.Wallpaper is { } wp)
@@ -233,6 +238,8 @@ public static class RestorePlanner
             Items = items,
             Wifi = wifi,
             WifiExisting = s.WifiExisting,
+            NetworkDrives = drives,
+            AskNetworkPassword = s.AskNetworkPassword,
             Wallpaper = wallpaper,
             Printers = printers,
             Outlook = outlook,
@@ -284,7 +291,7 @@ public static class RestorePlanner
 
         // Outlook mailbox: an explicit target, and Outlook open (DataBridge never starts it).
         if (s.Mailbox is { Include: true, TargetStoreId: null })
-            Block("Boîte Outlook : choisissez la boîte de destination (« Lister les boîtes Outlook », étape Outlook).");
+            Block("Boîte Outlook : choisissez la boîte de destination (étape « Quoi », Outlook › Personnaliser).");
         if (plan.Outlook != null && !Outlook.OutlookSession.IsOutlookRunning())
             Block("Boîte Outlook : ouvrez Outlook classique sur ce PC avant de lancer la restauration.");
         if (plan.Outlook != null)
@@ -313,6 +320,11 @@ public static class RestorePlanner
 
         if (plan.Wifi.Count > 0 && s.WifiState is { Available: false } ws)
             Warn(ws.Message ?? "Wi-Fi indisponible : les profils ne pourront pas être importés.");
+        foreach (var d in plan.NetworkDrives)
+            if (s.NetworkDriveState.Conflict(d.Letter, d.RemotePath) is { } conflict)
+                Warn($"Lecteur réseau {d.Letter} non restauré : {conflict}.");
+        if (plan.NetworkDrives.Count > 0 && s.Target.Profile.IsElevated)
+            Warn("DataBridge est lancé en administrateur : les lecteurs réseau connectés n'apparaîtront dans l'Explorateur qu'après une nouvelle ouverture de session.");
         if (s.Backup.IsLegacy)
             Warn("Sauvegarde ancienne génération : les chemins d'origine sont lus dans copy-log.txt quand ils y figurent.");
         if (plan.Items.Any(i => i.DestinationIsOneDrive))

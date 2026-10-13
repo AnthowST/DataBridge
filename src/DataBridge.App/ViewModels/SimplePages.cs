@@ -253,7 +253,7 @@ public sealed class WallpaperViewModel : PageViewModel
 {
     private ImageSource? _thumbnail;
 
-    public WallpaperViewModel(MainViewModel main) : base(main, 7, "Fond d'écran", "", "Nav_Wallpaper")
+    public WallpaperViewModel(MainViewModel main) : base(main, 8, "Fond d'écran", "", "Nav_Wallpaper")
     {
         UpdateSidebar();
     }
@@ -393,6 +393,16 @@ public sealed class BrowsersViewModel : PageViewModel
         Main.RequestRecalc();
     }
 
+    /// <summary>Step 3 tile: checked = the profiles detected as in use (all of them when none is), unchecked = none.</summary>
+    public void SetAll(bool value)
+    {
+        foreach (var card in Cards.Where(c => c.Detected))
+        {
+            var preselected = card.Profiles.Any(p => p.Info.PreSelected);
+            foreach (var p in card.Profiles) p.IsSelected = value && (!preselected || p.Info.PreSelected);
+        }
+    }
+
     public void ApplyTotals(PlanTotals totals)
     {
         foreach (var card in Cards)
@@ -511,7 +521,6 @@ public sealed class WifiViewModel : PageViewModel
             Message = detection.Message;
             IsLoaded = true;
             UpdateSidebar();
-            Main.Home.Refresh();
             Main.RequestRecalc();
         }, TaskScheduler.FromCurrentSynchronizationContext());
     }
@@ -565,7 +574,6 @@ public sealed class WifiViewModel : PageViewModel
             else
                 RecoveryMessage = "Récupération impossible : " + t.Exception?.InnerException?.Message;
             UpdateSidebar();
-            Main.Home.Refresh();
             Main.RequestRecalc();
         }, TaskScheduler.FromCurrentSynchronizationContext());
     }
@@ -588,7 +596,7 @@ public sealed class WifiViewModel : PageViewModel
         false;
 #endif
 
-    private void SetAll(bool value)
+    public void SetAll(bool value)
     {
         foreach (var item in Items) item.IsSelected = value;
     }
@@ -603,6 +611,111 @@ public sealed class WifiViewModel : PageViewModel
     {
         var n = Selection.SelectedWifi.Count;
         Status = !ServiceAvailable ? "Indisponible" : Items.Count == 0 ? "Aucun profil" : $"{n} / {Items.Count} profil(s)";
+        IsDone = n > 0;
+    }
+}
+
+// ====================================================================== Network drives (2.2)
+
+public sealed class NetworkDriveItemViewModel(NetworkDriveInfo info, NetworkDrivesViewModel owner) : ObservableObject
+{
+    public NetworkDriveInfo Info { get; } = info;
+    public string Letter => Info.Letter;
+    public string RemotePath => Info.RemotePath;
+    public string Account => Info.AccountLabel;
+    public bool HasAccount => Info.UserName != null;
+    public string StateText => Info.StateLabel;
+
+    public bool IsSelected
+    {
+        get => owner.Selection.SelectedNetworkDrives.Contains(Info.Letter);
+        set
+        {
+            if (value) owner.Selection.SelectedNetworkDrives.Add(Info.Letter);
+            else owner.Selection.SelectedNetworkDrives.Remove(Info.Letter);
+            OnPropertyChanged();
+            owner.SelectionChanged();
+        }
+    }
+}
+
+/// <summary>
+/// 7. Lecteurs réseau: drives of the session (letter, share, account name), read with the session rights. The password
+/// is never readable: it is asked by Windows at the restore.
+/// </summary>
+public sealed class NetworkDrivesViewModel : PageViewModel
+{
+    private bool _isLoaded;
+    private bool _loadedOnce;
+    private bool _readFailed;
+    private string? _message;
+
+    public NetworkDrivesViewModel(MainViewModel main) : base(main, 7, "Lecteurs réseau", "", "Nav_NetworkDrives")
+    {
+        RefreshCommand = new RelayCommand(Load);
+        SelectAllCommand = new RelayCommand(() => SetAll(true));
+        SelectNoneCommand = new RelayCommand(() => SetAll(false));
+        Status = "Détection…";
+    }
+
+    public BackupSelection Selection => Main.Selection;
+    public ObservableCollection<NetworkDriveItemViewModel> Items { get; } = [];
+    public ICommand RefreshCommand { get; }
+    public ICommand SelectAllCommand { get; }
+    public ICommand SelectNoneCommand { get; }
+    public bool IsLoaded { get => _isLoaded; private set => Set(ref _isLoaded, value); }
+    public string? Message { get => _message; private set => Set(ref _message, value); }
+
+    public void Load()
+    {
+        IsLoaded = false;
+        Status = "Détection…";
+        Task.Run(NetworkDriveService.Detect).ContinueWith(t =>
+        {
+            var previous = Selection.SelectedNetworkDrives.ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var first = !_loadedOnce;
+            _loadedOnce = true;
+            Selection.NetworkDrives.Clear();
+            Selection.SelectedNetworkDrives.Clear();
+            Items.Clear();
+            _readFailed = !t.IsCompletedSuccessfully;
+            if (t.IsCompletedSuccessfully)
+            {
+                foreach (var d in t.Result)
+                {
+                    Selection.NetworkDrives.Add(d);
+                    if (first || previous.Contains(d.Letter)) Selection.SelectedNetworkDrives.Add(d.Letter);
+                    Items.Add(new NetworkDriveItemViewModel(d, this));
+                }
+                Message = t.Result.Count == 0 ? "Aucun lecteur réseau pour cette session." : null;
+            }
+            else
+            {
+                Message = "Lecture des lecteurs réseau impossible : " + t.Exception?.InnerException?.Message;
+            }
+            IsLoaded = true;
+            UpdateSidebar();
+            Main.RequestRecalc();
+            Main.Summary.Refresh();
+        }, TaskScheduler.FromCurrentSynchronizationContext());
+    }
+
+    public void SetAll(bool value)
+    {
+        foreach (var item in Items) item.IsSelected = value;
+    }
+
+    public void SelectionChanged()
+    {
+        UpdateSidebar();
+        Main.RequestRecalc();
+        Main.Summary.Refresh();
+    }
+
+    private void UpdateSidebar()
+    {
+        var n = Selection.SelectedNetworkDrives.Count;
+        Status = Items.Count == 0 ? (_readFailed ? "Indisponible" : "Aucun lecteur") : $"{n} / {Items.Count} lecteur(s)";
         IsDone = n > 0;
     }
 }
@@ -636,7 +749,7 @@ public sealed class PrinterItemViewModel(LivePrinter printer, PrintersViewModel 
 }
 
 /// <summary>
-/// 8. Imprimantes: printers of this PC, read with the session rights (no administrator rights for the backup). The
+/// 9. Imprimantes: printers of this PC, read with the session rights (no administrator rights for the backup). The
 /// restorable ones (TCP/IP, shared connections) are checked by default; the others are exported for information only.
 /// </summary>
 public sealed class PrintersViewModel : PageViewModel
@@ -645,7 +758,7 @@ public sealed class PrintersViewModel : PageViewModel
     private bool _loadedOnce;
     private string? _message;
 
-    public PrintersViewModel(MainViewModel main) : base(main, 8, "Imprimantes", "", "Nav_Printers")
+    public PrintersViewModel(MainViewModel main) : base(main, 9, "Imprimantes", "", "Nav_Printers")
     {
         RefreshCommand = new RelayCommand(Load);
         SelectAllCommand = new RelayCommand(() => SetAll(true));
@@ -695,7 +808,7 @@ public sealed class PrintersViewModel : PageViewModel
         }, TaskScheduler.FromCurrentSynchronizationContext());
     }
 
-    private void SetAll(bool value)
+    public void SetAll(bool value)
     {
         foreach (var item in Items) item.IsSelected = value;
     }
@@ -705,6 +818,12 @@ public sealed class PrintersViewModel : PageViewModel
         UpdateSidebar();
         Main.RequestRecalc();
         Main.Summary.Refresh();
+    }
+
+    /// <summary>Step 3 tile: checked = the restorable printers (as on the first detection), unchecked = none.</summary>
+    public void SetSupported(bool value)
+    {
+        foreach (var item in Items) item.IsSelected = value && item.IsSupported;
     }
 
     private void UpdateSidebar()

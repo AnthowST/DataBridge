@@ -173,7 +173,7 @@
         <v:RowTemplateSelector x:Key="RowSelector" RootTemplate="{StaticResource RootRow}" EntryTemplate="{StaticResource EntryRow}" />
     </UserControl.Resources>
 
-    <DockPanel Margin="28,22,28,16">
+    <DockPanel Margin="24,14,24,12">
         <!-- Title -->
         <DockPanel DockPanel.Dock="Top">
             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Top">

@@ -5,7 +5,7 @@
 DataBridge est un utilitaire Windows permettant de sauvegarder et restaurer les principales données d'un profil
 utilisateur.
 
-Current version: **2.1.2**
+Current version: **2.2.0**
 
 | Fonction | Statut |
 |---|---|
@@ -22,6 +22,7 @@ Current version: **2.1.2**
 - Imprimantes (file, port TCP/IP, pilote, réglages) — format `.prnbak` de PrintBridge
 - Profils Chrome, Edge et Firefox
 - Profils Wi-Fi avec leur clé (droits de la session ; clés refusées récupérables avec une invite UAC à la demande)
+- Lecteurs réseau (lettre, partage, compte ; le mot de passe n'est jamais lisible ni sauvegardé)
 - Fond d'écran
 - Restauration sélective
 - Gestion des conflits
@@ -44,6 +45,20 @@ Au lancement, DataBridge propose **Sauvegarder ce profil** ou **Restaurer un pro
 DataBridge vers la session Windows actuelle). On revient à ce choix par « Accueil DataBridge » (en-tête) tant qu'aucune
 copie ou restauration n'est en cours.
 
+**Parcours en 4 étapes (2.2)**, affichées en haut de la fenêtre (cliquables) :
+
+| | Sauvegarde | Restauration |
+|---|---|---|
+| 1 | Sauvegarder | Restaurer |
+| 2 | **Où** : volume ou dossier de destination | **Sauvegarde** : dossier de la sauvegarde (« Suivant » l'utilise) |
+| 3 | **Quoi** : une case par catégorie, tout ce qui est détecté est coché | **Quoi** : une case par catégorie présente dans la sauvegarde |
+| 4 | **Lancer** : résumé et « Lancer la copie », puis la progression | **Lancer** : résumé et « Lancer la restauration » |
+
+À l'étape « Quoi », chaque case (dossiers personnels, autres fichiers, Outlook, navigateurs, Wi-Fi, lecteurs réseau, fond
+d'écran, imprimantes) coche ou décoche toute la catégorie (état partiel si une partie seulement est choisie) ;
+« Personnaliser » ouvre la page détaillée, que « Terminé » referme. Une case orange signale un choix à faire (boîte
+Outlook de destination, profil navigateur cible, destination d'un élément…) ; le résumé bloque tant qu'il manque.
+
 ## Navigateurs
 
 Les mots de passe, cookies, sessions et certaines données protégées des navigateurs peuvent être liés au compte Windows
@@ -52,17 +67,20 @@ pas leur restauration.
 
 ## Outlook et imprimantes (2.1)
 
-- **Boîte aux lettres Outlook** : moteur repris de *Sauvegarde Outlook* (COM tardif sur un thread STA dédié). Étape
-  « 4. Outlook » : case « Boîte aux lettres » cochée par défaut (décochée : aucune boîte exportée, Outlook n'est pas
+- **Boîte aux lettres Outlook** : moteur repris de *Sauvegarde Outlook* (COM tardif sur un thread STA dédié). Page
+  « Outlook » : case « Boîte aux lettres » cochée par défaut (décochée : aucune boîte exportée, Outlook n'est pas
   lu) ; les boîtes du profil sont listées automatiquement (boîte par défaut présélectionnée ; un fichier de
   données introuvable, PST déplacé ou supprimé, est ignoré et signalé sans toucher au profil), quatre catégories (mails,
   calendrier, contacts, autocomplétion) dont **tout** le contenu est copié. Sauvegarde : la boîte n'est que lue, chaque
   élément passe par un `.msg` temporaire vers un nouveau PST (`Outlook\Boite`), retiré du profil ensuite ; autocomplétion
   copiée à part (`.bin` + `.csv`). Restauration : copie de travail du PST, boîte de destination toujours choisie
   explicitement, ajout uniquement (fusion avec les dossiers spéciaux ou dossier « Restauration <date> »), doublons
-  ignorés, aucun envoi ; l'autocomplétion devient des contacts, et remplace le cache seulement sur demande.
-- **Imprimantes** : moteur repris de *PrintBridge* (`src/DataBridge.Printers`, même format d'archive `.prnbak`). Étape
-  « 8. Imprimantes » : export en lecture seule avec les droits de la session (`Imprimantes\Imprimantes.prnbak`). À la
+  ignorés, aucun envoi ; l'autocomplétion devient des contacts, et remplace le cache seulement sur demande. (2.2) À la
+  restauration aussi, une case principale « boîte aux lettres » (cochée par défaut) avec, juste en dessous, les cases
+  mails, calendrier, contacts et autocomplétion ; décochée, rien n'est restauré, aucune boîte de destination n'est
+  demandée et Outlook n'est pas lu.
+- **Imprimantes** : moteur repris de *PrintBridge* (`src/DataBridge.Printers`, même format d'archive `.prnbak`). Page
+  « Imprimantes » : export en lecture seule avec les droits de la session (`Imprimantes\Imprimantes.prnbak`). À la
   restauration, l'archive est vérifiée (empreintes) et ce PC analysé sans rien modifier ; une imprimante déjà présente
   sous le même nom n'est jamais modifiée. Les opérations du profil (connexions partagées, préférences, imprimante par
   défaut) restent dans DataBridge ; les opérations machine (pilote, port, file) passent par **une** instance élevée
@@ -73,18 +91,36 @@ pas leur restauration.
 
 La sauvegarde demande chaque clé Wi-Fi en clair à Windows avec les droits de la session ; quand Windows l'accepte (cas
 habituel d'un compte administrateur du PC), elle est incluse dans le XML exporté sans aucune invite. Quand Windows la
-refuse (par exemple avec un compte utilisateur standard), l'étape « 6. Réseaux Wi-Fi » propose « Récupérer les clés
+refuse (par exemple avec un compte utilisateur standard), la page « Réseaux Wi-Fi » propose « Récupérer les clés
 (administrateur) » : **une** invite UAC (identifiants d'un administrateur du PC) démarre
 `DataBridge.exe --wifi-key-worker`, qui lit uniquement les profils Wi-Fi demandés, renvoie leur XML par un canal nommé à
 ACL restreinte (PID vérifié) puis s'arrête ; il n'écrit aucun fichier. Le XML reste en mémoire jusqu'à la sauvegarde
 (`Network\WiFi`) ; la clé n'est jamais affichée ni écrite dans le journal. Refusée, l'invite ne change rien : les
 profils sont exportés sans clé. Un profil propre à un autre compte Windows peut rester protégé.
 
+## Lecteurs réseau (2.2)
+
+Case et page « Lecteurs réseau » (sauvegarde et restauration). La sauvegarde lit, avec les droits de la session, les
+lecteurs persistants de `HKCU\Network` (lettre, `RemotePath`, `UserName`) et les lecteurs connectés pour la session seule
+(`WNetGetConnection` / `WNetGetUser`) ; ils sont tous cochés par défaut et enregistrés dans le manifest
+(`networkDrives` : lettre, partage UNC, compte, persistant) et dans `copy-log.txt`. Aucun fichier n'est copié et **le mot
+de passe n'est jamais lu** (Windows ne le rend pas lisible) : un compte vide signifie « identifiants de la session
+Windows ».
+
+À la restauration, chaque lecteur coché est reconnecté (`WNetAddConnection2`, persistant) avec la même lettre, le même
+partage et le même compte. Une lettre déjà utilisée sur ce PC (disque local ou autre partage) n'est jamais reprise ; un
+lecteur déjà connecté au même partage est conservé. Si le partage exige un mot de passe et que l'option « Demander le mot
+de passe » est cochée (par défaut), Windows affiche sa propre fenêtre de connexion, avec le compte prérempli
+(`WNetAddConnection3`, `CONNECT_INTERACTIVE`) : le mot de passe saisi ne passe pas par DataBridge. Un partage
+inaccessible (serveur absent, VPN) est signalé sans rien modifier. À la lecture du manifest, seules une lettre `X:` et un
+chemin UNC `\\serveur\partage` sont acceptés.
+
 ## Stack
 
 - C#, WPF, .NET 10 ; aucune dépendance NuGet dans l'application
 - P/Invoke Win32 : `SHGetKnownFolderPath`, `FindFirstFileExW`, `CopyFileExW`, `GetDiskFreeSpaceExW`,
-  `IOCTL_STORAGE_QUERY_PROPERTY`, API WLAN (`wlanapi.dll`), `GetTokenInformation`, `GetFinalPathNameByHandleW`
+  `IOCTL_STORAGE_QUERY_PROPERTY`, API WLAN (`wlanapi.dll`), `GetTokenInformation`, `GetFinalPathNameByHandleW`,
+  `WNetAddConnection2/3W`, `WNetGetConnectionW`, `WNetGetUserW` (`mpr.dll`)
 - Icônes : Segoe Fluent Icons (repli Segoe MDL2 Assets) + icônes Explorateur par type de fichier
 - Tests : xUnit (cœur, imprimantes), UI Automation via PowerShell 5.1 (fenêtre réelle)
 
@@ -149,7 +185,8 @@ src/DataBridge.Core/            logique, sans WPF
   Profile/                       ProfileInfo (PC, session, élévation), KnownFolders, OneDriveAccounts (comptes + mapping)
   Selection/                     SelectionTree (règles hiérarchiques + tri-état), Coverage (anti-doublons), BackupSelection
   Scanning/                      SizeScanner (tailles en arrière-plan), DirectoryListingCache (lazy loading)
-  Detection/                     VolumeService, BrowserDetector, BrowserProcessService, FirefoxProfiles, WifiService…
+  Detection/                     VolumeService, BrowserDetector, BrowserProcessService, FirefoxProfiles, WifiService,
+                                 NetworkDriveService…
   Copy/                          CopyPlan + BackupNaming, PlanCalculator, CopyEngine, CopyModels, DestinationGuard
   Logging/CopyLogWriter.cs       copy-log.txt
   Outlook/                       moteur Outlook (repris de Sauvegarde Outlook), OutlookSession (thread STA), OutlookTransfer
@@ -157,7 +194,7 @@ src/DataBridge.Core/            logique, sans WPF
   Restore/                       restauration (2.0) : BackupManifest (+ BackupManifestWriter), BackupReader (manifest / 1.x),
                                  RestoreTarget, RestoreSelection, RestorePlanner (plan, validation, analyse), RestoreWalker,
                                  RestoreEngine, RestorePaths (sécurité des chemins), BrowserRestoreService,
-                                 WifiRestoreService, WallpaperRestoreService, RestoreLogWriter
+                                 WifiRestoreService, NetworkDriveRestoreService, WallpaperRestoreService, RestoreLogWriter
 src/DataBridge.Printers/        moteur d'imprimantes repris de PrintBridge (inventaire, export .prnbak, analyse, restauration,
                                  worker élevé à liste fermée d'opérations)
 src/DataBridge.App/             WPF (assembly « DataBridge » → DataBridge.exe)
@@ -167,8 +204,9 @@ src/DataBridge.App/             WPF (assembly « DataBridge » → DataBridge.ex
   Themes/Theme.xaml              styles (boutons, cartes, badges, cases, navigation, recherche, progression…)
   Infrastructure/                MVVM, icônes shell, BrandAssets (chargement du logo)
   ViewModels/, Views/            ShellViewModel (accueil Sauvegarder / Restaurer), MainViewModel (assistant de sauvegarde),
-                                 RestoreViewModel + Restore*ViewModel (assistant de restauration), WizardView (barre
-                                 latérale + pied communs), DataBridgeDialog (modale unique)
+                                 RestoreViewModel + Restore*ViewModel (assistant de restauration), SelectionHub (étape
+                                 « Quoi » : cases par catégorie), WizardView (4 étapes en haut + pied communs),
+                                 DataBridgeDialog (modale unique)
 tests/DataBridge.Tests/         tests unitaires du cœur et des imprimantes
 tools/ui-test/                   UiTest.psm1 (UI Automation, captures, jeton), scénarios Run-*.ps1
 docs/screenshots/databridge-2.0.0/ captures de la fenêtre réelle (2.0.0) ; databridge-2.1.0/ (Outlook, imprimantes)
@@ -237,7 +275,7 @@ Les compteurs des cartes navigateurs ont une largeur fixe et leurs deux lignes s
   jetons, données de synchronisation non restaurés (non portables) ; copie de sécurité des fichiers remplacés dans
   `%LOCALAPPDATA%\DataBridge\RestoreSafety` ; Firefox : profil existant ou nouveau profil inscrit dans profiles.ini.
 - **Wi-Fi** : import par l'API WLAN avec les droits de la session ; profil existant conservé ou remplacé ; clé jamais
-  affichée ni journalisée. **Fond d'écran** : copie, puis application par Windows (sinon « actualisation manuelle »).
+  affichée ni journalisée. **Lecteurs réseau** (2.2) : voir ci-dessus. **Fond d'écran** : copie, puis application par Windows (sinon « actualisation manuelle »).
 - **Sécurité** : chemins relatifs stricts (pas de `..`, de chemin absolu, de flux, de nom réservé), liens / jonctions de
   la sauvegarde jamais suivis, chaque écriture vérifiée sous sa destination, dossiers système refusés.
 - **Journal** : `%LOCALAPPDATA%\DataBridge\Logs\restore-AAAA-MM-JJ_HH-mm.log` (la sauvegarde n'est jamais modifiée).
@@ -256,6 +294,7 @@ DataBridge_<PC>_<Session>_<AAAA-MM-JJ>_<HH-mm>\
 ├── Imprimantes\Imprimantes.prnbak   (2.1) archive des imprimantes (format PrintBridge)
 ├── copy-log.txt
 └── databridge-manifest.json   (2.0) description structurée, sans mot de passe, clé, jeton ni cookie
+                               (2.2 : lecteurs réseau dans « networkDrives », sans fichier à part)
 ```
 
 Les sauvegardes des versions précédentes (`ProfileCopy_…`, `itelium_ProfileCopy_…`) restent reconnues :

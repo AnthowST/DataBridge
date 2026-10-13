@@ -171,6 +171,8 @@ public sealed class CopyResult
     public DateTime StartedAt { get; init; }
     public List<JobResult> Jobs { get; } = [];
     public List<WifiExportResult> Wifi { get; } = [];
+    /// <summary>Network drives recorded in the backup (2.2): the phase was reached, they are in the manifest.</summary>
+    public List<NetworkDriveInfo> NetworkDrives { get; } = [];
     /// <summary>Printers exported (2.1), null when none was selected.</summary>
     public PrinterTransfer.PrinterBackupResult? Printers { get; set; }
     /// <summary>Outlook mailbox exported to a PST (2.1), null when none was chosen.</summary>

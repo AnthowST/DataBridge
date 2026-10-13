@@ -41,12 +41,12 @@
     </UserControl.Resources>
 
     <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Margin="28,24,28,24">
-            <TextBlock Text="9. Résumé avant la copie" Style="{StaticResource PageTitle}" />
+        <StackPanel Margin="24,14,24,18">
+            <TextBlock Text="Vérifier et lancer la sauvegarde" Style="{StaticResource PageTitle}" />
             <TextBlock Style="{StaticResource PageSubtitle}" Text="Vérifiez la sélection. Les tailles correspondent exactement aux éléments cochés." />
 
             <!-- Destination inside a selected source: blocking -->
-            <Border Style="{StaticResource DangerBanner}" Margin="0,16,0,0" Padding="16,12" Visibility="{Binding HasConflict, Converter={StaticResource Visible}}"
+            <Border Style="{StaticResource DangerBanner}" Margin="0,12,0,0" Padding="16,12" Visibility="{Binding HasConflict, Converter={StaticResource Visible}}"
                     AutomationProperties.AutomationId="DestinationConflict">
                 <DockPanel>
                     <TextBlock DockPanel.Dock="Left" Style="{StaticResource Icon}" Text="&#xE783;" FontSize="18" Foreground="{StaticResource Danger}"
@@ -67,7 +67,7 @@
                 </DockPanel>
             </Border>
 
-            <Grid Margin="0,18,0,0">
+            <Grid Margin="0,12,0,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="16" />

@@ -23,13 +23,14 @@
             <DataTemplate DataType="{x:Type vm:RestoreViewModel}"><v:WizardView /></DataTemplate>
 
             <!-- Backup pages -->
-            <DataTemplate DataType="{x:Type vm:HomeViewModel}"><v:HomeView /></DataTemplate>
+            <DataTemplate DataType="{x:Type vm:BackupHubViewModel}"><v:SelectionHubView /></DataTemplate>
             <DataTemplate DataType="{x:Type vm:DestinationViewModel}"><v:DestinationView /></DataTemplate>
             <DataTemplate DataType="{x:Type vm:PersonalViewModel}"><v:PersonalView /></DataTemplate>
             <DataTemplate DataType="{x:Type vm:AdditionalViewModel}"><v:AdditionalView /></DataTemplate>
             <DataTemplate DataType="{x:Type vm:OutlookViewModel}"><v:OutlookView /></DataTemplate>
             <DataTemplate DataType="{x:Type vm:BrowsersViewModel}"><v:BrowsersView /></DataTemplate>
             <DataTemplate DataType="{x:Type vm:WifiViewModel}"><v:WifiView /></DataTemplate>
+            <DataTemplate DataType="{x:Type vm:NetworkDrivesViewModel}"><v:NetworkDrivesView /></DataTemplate>
             <DataTemplate DataType="{x:Type vm:WallpaperViewModel}"><v:WallpaperView /></DataTemplate>
             <DataTemplate DataType="{x:Type vm:PrintersViewModel}"><v:PrintersView /></DataTemplate>
             <DataTemplate DataType="{x:Type vm:SummaryViewModel}"><v:SummaryView /></DataTemplate>
@@ -37,10 +38,12 @@
 
             <!-- Restore pages (2. Dossiers personnels reuses PersonalView) -->
             <DataTemplate DataType="{x:Type vm:RestoreSourceViewModel}"><v:RestoreSourceView /></DataTemplate>
+            <DataTemplate DataType="{x:Type vm:RestoreHubViewModel}"><v:SelectionHubView /></DataTemplate>
             <DataTemplate DataType="{x:Type vm:RestoreAdditionalViewModel}"><v:RestoreAdditionalView /></DataTemplate>
             <DataTemplate DataType="{x:Type vm:RestoreOutlookViewModel}"><v:RestoreOutlookView /></DataTemplate>
             <DataTemplate DataType="{x:Type vm:RestoreBrowsersViewModel}"><v:RestoreBrowsersView /></DataTemplate>
             <DataTemplate DataType="{x:Type vm:RestoreWifiViewModel}"><v:RestoreWifiView /></DataTemplate>
+            <DataTemplate DataType="{x:Type vm:RestoreNetworkDrivesViewModel}"><v:RestoreNetworkDrivesView /></DataTemplate>
             <DataTemplate DataType="{x:Type vm:RestoreWallpaperViewModel}"><v:RestoreWallpaperView /></DataTemplate>
             <DataTemplate DataType="{x:Type vm:RestorePrintersViewModel}"><v:RestorePrintersView /></DataTemplate>
             <DataTemplate DataType="{x:Type vm:RestoreSummaryViewModel}"><v:RestoreSummaryView /></DataTemplate>
